@@ -13,7 +13,7 @@ DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(DATA_DIR, "transcriptions.db")
 AUDIO_DIR = os.path.join(DATA_DIR, "audio_uploads")
 FRONTEND = os.path.join(DATA_DIR, "index.html")
-WHISPER_MODEL = "base"  # tiny, base, small, medium, large
+WHISPER_MODEL = "small"  # tiny, base, small, medium, large
 WHISPER_LANG = "fr"
 
 os.makedirs(AUDIO_DIR, exist_ok=True)
@@ -126,17 +126,16 @@ class TranscriptionHandler(SimpleHTTPRequestHandler):
         fields = {}
         file_data = None
         filename = None
-        field_name = None
 
         for part in parts:
             if not part or part.strip() in (b"", b"--", b"\r\n", b"--\r\n"):
                 continue
 
-            # Remove leading \r\n
-            if part.startswith(b"\r\n"):
+            # Supprimer les \r\n de début
+            while part.startswith(b"\r\n"):
                 part = part[2:]
 
-            # Headers end with \r\n\r\n
+            # Headers se terminent par \r\n\r\n
             header_end = part.find(b"\r\n\r\n")
             if header_end == -1:
                 continue
@@ -144,27 +143,28 @@ class TranscriptionHandler(SimpleHTTPRequestHandler):
             headers_raw = part[:header_end].decode("utf-8", errors="replace")
             content = part[header_end + 4:]
 
-            # Remove trailing \r\n
-            if content.endswith(b"\r\n"):
+            # Nettoyer les fins de ligne pour le fichier brut
+            while content.endswith(b"\r\n"):
                 content = content[:-2]
 
             name_match = re.search(r'name="([^"]*)"', headers_raw)
-            this_name = name_match.group(1) if name_match else None
-
-            # Check if it's a file
             filename_match = re.search(r'filename="([^"]*)"', headers_raw)
+
             if filename_match:
                 filename = filename_match.group(1)
-                field_name = this_name
-                file_data = content
-            elif this_name:
-                val = content.decode("utf-8", errors="replace")
-                fields[this_name] = val
-
-        # Si le fichier est dans le champ 'audio' ou n'importe quel champ avec un fichier
-        if not file_data and 'audio' in fields:
-            # Cas où le fichier n'a pas été détecté comme fichier
-            pass
+                file_data = content  # données binaires brutes, PAS de strip
+            elif name_match:
+                # Données texte : nettoyer
+                if content.endswith(b"--"):
+                    content = content[:-2]
+                while content.endswith(b"\r\n"):
+                    content = content[:-2]
+                content = content.strip()
+                try:
+                    val = content.decode("utf-8", errors="replace").strip()
+                    fields[name_match.group(1)] = val
+                except:
+                    pass
 
         return fields, file_data, filename
 
