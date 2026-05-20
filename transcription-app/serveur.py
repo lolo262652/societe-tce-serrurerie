@@ -114,46 +114,57 @@ class TranscriptionHandler(SimpleHTTPRequestHandler):
         return json.loads(body.decode())
 
     def _parse_multipart(self, body, ct):
-        """Parse multipart form data"""
-        boundary = ct.split("boundary=")[1].strip()
-        if boundary.startswith('"') and boundary.endswith('"'):
-            boundary = boundary[1:-1]
-        boundary = boundary.encode()
+        """Parse multipart form data - robust version"""
+        boundary_raw = ct.split("boundary=")[1].strip()
+        if boundary_raw.startswith('"') and boundary_raw.endswith('"'):
+            boundary_raw = boundary_raw[1:-1]
+        boundary = boundary_raw.encode()
+        if boundary.startswith(b'--'):
+            boundary = boundary[2:]
 
         parts = body.split(b"--" + boundary)
         fields = {}
         file_data = None
         filename = None
+        field_name = None
 
         for part in parts:
-            if not part or part in (b"\r\n", b"--\r\n", b"") or part.strip() == b"--":
+            if not part or part.strip() in (b"", b"--", b"\r\n", b"--\r\n"):
                 continue
 
-            # Extract headers
+            # Remove leading \r\n
+            if part.startswith(b"\r\n"):
+                part = part[2:]
+
+            # Headers end with \r\n\r\n
             header_end = part.find(b"\r\n\r\n")
             if header_end == -1:
                 continue
-            headers_raw = part[:header_end].decode()
-            content = part[header_end+4:]
+
+            headers_raw = part[:header_end].decode("utf-8", errors="replace")
+            content = part[header_end + 4:]
 
             # Remove trailing \r\n
             if content.endswith(b"\r\n"):
                 content = content[:-2]
 
+            name_match = re.search(r'name="([^"]*)"', headers_raw)
+            this_name = name_match.group(1) if name_match else None
+
             # Check if it's a file
-            if 'filename="' in headers_raw:
-                filename_match = re.search(r'filename="([^"]*)"', headers_raw)
-                if filename_match:
-                    filename = filename_match.group(1)
-                name_match = re.search(r'name="([^"]*)"', headers_raw)
-                if name_match:
-                    fields[name_match.group(1)] = content
+            filename_match = re.search(r'filename="([^"]*)"', headers_raw)
+            if filename_match:
+                filename = filename_match.group(1)
+                field_name = this_name
                 file_data = content
-            else:
-                name_match = re.search(r'name="([^"]*)"', headers_raw)
-                if name_match:
-                    val = content.decode("utf-8", errors="replace")
-                    fields[name_match.group(1)] = val
+            elif this_name:
+                val = content.decode("utf-8", errors="replace")
+                fields[this_name] = val
+
+        # Si le fichier est dans le champ 'audio' ou n'importe quel champ avec un fichier
+        if not file_data and 'audio' in fields:
+            # Cas où le fichier n'a pas été détecté comme fichier
+            pass
 
         return fields, file_data, filename
 
@@ -299,7 +310,13 @@ class TranscriptionHandler(SimpleHTTPRequestHandler):
 
         # Sauvegarder l'audio
         tid = uuid.uuid4().hex[:12]
-        ext = "webm" if not filename else filename.rsplit(".", 1)[-1] if "." in filename else "webm"
+        # Déterminer l'extension
+        if filename and "." in filename:
+            ext = filename.rsplit(".", 1)[-1].lower()
+        else:
+            ext = "webm"
+        # Nettoyer l'extension
+        ext = re.sub(r'[^a-z0-9]', '', ext) or "webm"
         audio_name = f"{tid}.{ext}"
         audio_path = os.path.join(AUDIO_DIR, audio_name)
         with open(audio_path, "wb") as f:
@@ -315,21 +332,23 @@ class TranscriptionHandler(SimpleHTTPRequestHandler):
 
         def process():
             try:
-                # Convertir en wav si nécessaire pour Whisper
                 wav_path = audio_path
-                if ext not in ("wav", "mp3"):
+                # Whisper accepte nativement webm/ogg/mp4/m4a via ffmpeg
+                # Convertir en wav 16kHz mono pour être sûr
+                formats_ok = {"wav", "mp3", "m4a", "aac"}
+                if ext not in formats_ok:
                     wav_path = audio_path + ".wav"
-                    subprocess.run(["ffmpeg", "-y", "-i", audio_path, "-ar", "16000", "-ac", "1", wav_path],
-                                   capture_output=True, check=True)
+                    subprocess.run(
+                        ["ffmpeg", "-y", "-i", audio_path, "-ar", "16000", "-ac", "1", wav_path],
+                        capture_output=True, check=True, timeout=120
+                    )
 
                 raw, formatted, segments = transcribe_audio(wav_path)
                 duration = segments[-1]["end"] if segments else 0
 
-                # Nettoyer fichier temporaire
                 if wav_path != audio_path and os.path.exists(wav_path):
                     os.remove(wav_path)
 
-                # Sauvegarder en DB
                 conn = sqlite3.connect(DB_PATH)
                 conn.execute("INSERT OR REPLACE INTO transcriptions "
                             "(id, title, date, speaker_count, duration_seconds, audio_filename, raw_transcription, formatted_text, language) "
@@ -338,14 +357,38 @@ class TranscriptionHandler(SimpleHTTPRequestHandler):
                 conn.commit()
                 conn.close()
                 print(f"[OK] Transcription terminée: {title} ({duration:.0f}s)")
-            except Exception as e:
-                print(f"[ERREUR] Transcription: {e}")
-                # Enregistrer l'erreur
+            except subprocess.TimeoutExpired:
+                print(f"[ERREUR] ffmpeg timeout pour {audio_name}")
                 conn = sqlite3.connect(DB_PATH)
                 conn.execute("INSERT OR REPLACE INTO transcriptions "
                             "(id, title, date, speaker_count, audio_filename, raw_transcription, formatted_text, language) "
                             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                            (tid, title, date, speakers, audio_name, f"[Erreur: {e}]", "", WHISPER_LANG))
+                            (tid, title, date, speakers, audio_name,
+                             "[Erreur: La conversion audio a expiré (fichier trop long ou corrompu)]",
+                             "", WHISPER_LANG))
+                conn.commit()
+                conn.close()
+            except subprocess.CalledProcessError as e:
+                err_msg = e.stderr.decode()[:200] if e.stderr else "Erreur inconnue"
+                print(f"[ERREUR] ffmpeg: {err_msg}")
+                conn = sqlite3.connect(DB_PATH)
+                conn.execute("INSERT OR REPLACE INTO transcriptions "
+                            "(id, title, date, speaker_count, audio_filename, raw_transcription, formatted_text, language) "
+                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                            (tid, title, date, speakers, audio_name,
+                             f"[Erreur de conversion audio: {err_msg}]",
+                             "", WHISPER_LANG))
+                conn.commit()
+                conn.close()
+            except Exception as e:
+                print(f"[ERREUR] Transcription: {e}")
+                conn = sqlite3.connect(DB_PATH)
+                conn.execute("INSERT OR REPLACE INTO transcriptions "
+                            "(id, title, date, speaker_count, audio_filename, raw_transcription, formatted_text, language) "
+                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                            (tid, title, date, speakers, audio_name,
+                             f"[Erreur: {e}]",
+                             "", WHISPER_LANG))
                 conn.commit()
                 conn.close()
 

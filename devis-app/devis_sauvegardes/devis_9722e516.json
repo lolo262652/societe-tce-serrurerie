@@ -1,0 +1,44 @@
+{
+  "id": "9722e516",
+  "numero": "2025-001",
+  "date": "2026-05-19",
+  "type": "tce",
+  "tva": 20,
+  "remise": 0,
+  "acompte": 30,
+  "validite": 30,
+  "delai": "3semaine",
+  "clientNom": "amg",
+  "clientEmail": "fatmakamg@gmail.com",
+  "clientAdresse": "île de france",
+  "clientTel": "53077430",
+  "notes": "Paiement : 30% commande, solde livraison.\nGarantie décennale (loi Spinetta).\nGarantie biennale (2 ans) équipements.",
+  "pieces": [
+    {
+      "nom": "Général",
+      "lignes": [
+        {
+          "description": "Démolition (m²)",
+          "quantite": 1,
+          "unite": "m²",
+          "prixUnitaire": 28,
+          "heures": 0.5
+        }
+      ]
+    },
+    {
+      "nom": "Cuisine",
+      "lignes": [
+        {
+          "description": "Pose évier",
+          "quantite": 1,
+          "unite": "unité",
+          "prixUnitaire": 150,
+          "heures": 2
+        }
+      ]
+    }
+  ],
+  "status": "brouillon",
+  "createdAt": "2026-05-19T11:28:51.761Z"
+}

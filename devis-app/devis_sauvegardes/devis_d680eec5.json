@@ -1,0 +1,39 @@
+{
+  "id": "d680eec5",
+  "numero": "2025-001",
+  "date": "2026-05-19",
+  "type": "tce",
+  "tva": 20,
+  "remise": 0,
+  "acompte": 30,
+  "validite": 30,
+  "delai": "",
+  "clientNom": "AMG",
+  "clientEmail": "laurent.mabanque@gmail.com",
+  "clientAdresse": "135 Route de la Reine, Boulogne-Billancourt, France",
+  "clientTel": "0616372104",
+  "notes": "Paiement : 30% commande, solde livraison.\nGarantie décennale (loi Spinetta).\nGarantie biennale (2 ans) équipements.",
+  "pieces": [
+    {
+      "nom": "Salle de bain",
+      "lignes": [
+        {
+          "description": "Carrelage mural douche (m²)",
+          "quantite": 1,
+          "unite": "m²",
+          "prixUnitaire": 55,
+          "heures": 1.2
+        },
+        {
+          "description": "Carrelage mural douche (m²)",
+          "quantite": 1,
+          "unite": "m²",
+          "prixUnitaire": 55,
+          "heures": 1.2
+        }
+      ]
+    }
+  ],
+  "status": "brouillon",
+  "createdAt": "2026-05-19T10:27:11.155Z"
+}

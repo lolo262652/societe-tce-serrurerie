@@ -190,6 +190,36 @@ let recordingSeconds = 0;
 let recordedBlob = null;
 let isPolling = false;
 
+// ─── MIME TYPE (compatible Android) ───
+function getBestMimeType() {
+  // Ordre de préférence : ce qu'Android Chrome supporte le mieux
+  const types = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/ogg;codecs=opus',
+    'audio/mp4;codecs=mp4a.40.2',
+    'audio/mp4',
+    'audio/aac',
+    ''
+  ];
+  for (const t of types) {
+    if (!t) return '';
+    if (MediaRecorder.isTypeSupported(t)) {
+      console.log('📹 MIME supporté:', t);
+      return t;
+    }
+  }
+  return '';
+}
+
+function getFileExt(mime) {
+  if (!mime || mime === '') return 'webm';
+  if (mime.includes('ogg')) return 'ogg';
+  if (mime.includes('mp4')) return 'mp4';
+  if (mime.includes('aac')) return 'aac';
+  return 'webm';
+}
+
 // ══════════════════════════════════════
 // ─── SIDEBAR ───
 // ══════════════════════════════════════
@@ -326,7 +356,10 @@ async function toggleRecording() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     audioChunks = [];
     recordedBlob = null;
-    mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm' });
+    const mimeType = getBestMimeType();
+    const options = mimeType ? { mimeType } : {};
+    mediaRecorder = new MediaRecorder(stream, options);
+    const fileExt = getFileExt(mimeType);
     
     mediaRecorder.ondataavailable = e => {
       if (e.data.size > 0) audioChunks.push(e.data);
@@ -411,10 +444,12 @@ async function submitMeeting() {
   const speakers = document.getElementById('meetingSpeakers').value;
 
   const formData = new FormData();
+  // Détecter l'extension depuis le blob
+  const ext = recordedBlob.type ? getFileExt(recordedBlob.type) : 'webm';
   formData.append('title', title);
   formData.append('date', date);
   formData.append('speaker_count', speakers);
-  formData.append('audio', recordedBlob, `enregistrement.webm`);
+  formData.append('audio', recordedBlob, `enregistrement.${ext}`);
 
   try {
     const r = await fetch('/api/upload', { method: 'POST', body: formData });
