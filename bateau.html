@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bateau interactif</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a2e;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'Segoe UI', sans-serif;
+  }
+  .container { text-align: center; }
+  canvas {
+    border-radius: 16px;
+    box-shadow: 0 0 60px rgba(30,144,255,0.3);
+    max-width: 100%;
+    height: auto;
+    cursor: crosshair;
+  }
+  .controls {
+    margin-top: 16px;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .controls button {
+    padding: 10px 24px;
+    background: #1a3a6a;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background 0.2s;
+  }
+  .controls button:hover { background: #2a5a9a; }
+  .controls button.active { background: #c0392b; }
+  .controls label {
+    color: #8ab4f8;
+    font-size: .85em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .controls input[type=range] {
+    width: 100px;
+    accent-color: #4db8ff;
+  }
+  .title {
+    color: #8ab4f8;
+    font-size: 1.3em;
+    margin-bottom: 12px;
+    font-weight: bold;
+    text-shadow: 0 0 20px rgba(138,180,248,0.3);
+  }
+  .info {
+    color: #6a8ab8;
+    font-size: .8em;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="title">⛵ Bateau interactif</div>
+  <canvas id="canvas" width="800" height="600"></canvas>
+  <div class="controls">
+    <button onclick="toggleAnim()">⏸️ Pause</button>
+    <button onclick="toggleNight()">☀️🌙 Jour / Nuit</button>
+    <button onclick="toggleRain()" id="rainBtn">🌧️ Pluie</button>
+    <label>🌊 Vitesse <input type="range" min="0.1" max="3" step="0.1" value="1" id="speedSlider"></label>
+  </div>
+  <div class="info">🖱️ Bouge la souris pour diriger le bateau · Clic mer → éclaboussure · Clic ciel → nuage · Clic mouette → elle s'enfuit</div>
+</div>
+
+<script>
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const W = 800, H = 600;
+
+  let time = 0;
+  let animating = true;
+  let isNight = false;
+  let rain = false;
+  let animFrameId = null;
+  let lastTime = 0;
+  let raindrops = [];
+
+  // ── Interactivité ──
+  let mouseX = 400;           // position cible du bateau (souris)
+  let boatX = 400;            // position réelle (interpolée)
+  let splashes = [];          // {x, y, radius, maxRadius, alpha}
+  let customClouds = [];      // nuages ajoutés par le user {x, y, scale}
+  let scaredBirds = [];       // mouettes effrayées qui s'envolent
+  let birdScareCooldown = 0;
+
+  canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    mouseX = ((e.clientX - rect.left) / rect.width) * W;
+  });
+
+  canvas.addEventListener('click', e => {
+    const rect = canvas.getBoundingClientRect();
+    const cx = ((e.clientX - rect.left) / rect.width) * W;
+    const cy = ((e.clientY - rect.top) / rect.height) * H;
+
+    if (cy > 320) {
+      // Clic sur la mer → éclaboussure
+      splashes.push({ x: cx, y: cy, radius: 0, maxRadius: 30 + Math.random() * 20, alpha: 0.6 });
+      // Deux vagues secondaires
+      setTimeout(() => {
+        splashes.push({ x: cx - 20, y: cy + 8, radius: 0, maxRadius: 15, alpha: 0.3 });
+        splashes.push({ x: cx + 20, y: cy + 12, radius: 0, maxRadius: 12, alpha: 0.3 });
+      }, 100);
+    } else if (cy < 300) {
+      // Clic sur le ciel → ajouter un nuage
+      customClouds.push({ x: cx, y: cy, scale: 0.6 + Math.random() * 0.8 });
+    }
+  });
+
+  // Détection clic sur mouettes (vérifiée dans l'animation)
+  let birds = []; // sera rempli
+
+  // Générer gouttes de pluie
+  for (let i = 0; i < 200; i++) {
+    raindrops.push({ x: Math.random() * W + 50, y: Math.random() * H, speed: 4 + Math.random() * 6, length: 10 + Math.random() * 15 });
+  }
+
+  function getSpeed() {
+    return parseFloat(document.getElementById('speedSlider').value);
+  }
+
+  function animate(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    const delta = timestamp - lastTime;
+    lastTime = timestamp;
+    if (animating) time += delta * 0.05 * getSpeed();
+    // Interpolation douce du bateau vers la souris
+    boatX += (mouseX - boatX) * 0.02;
+    drawFrame();
+    animFrameId = requestAnimationFrame(animate);
+  }
+
+  function toggleAnim() {
+    animating = !animating;
+    const btn = document.querySelector('.controls button:nth-child(1)');
+    btn.textContent = animating ? '⏸️ Pause' : '▶️ Play';
+    if (animating) {
+      lastTime = 0;
+      animFrameId = requestAnimationFrame(animate);
+    } else if (animFrameId) {
+      cancelAnimationFrame(animFrameId);
+      animFrameId = null;
+    }
+  }
+
+  function toggleNight() {
+    isNight = !isNight;
+  }
+
+  function toggleRain() {
+    rain = !rain;
+    document.getElementById('rainBtn').classList.toggle('active', rain);
+  }
+
+  // ── Dessin ──
+
+  function drawSky() {
+    const grad = ctx.createLinearGradient(0, 0, 0, 350);
+    if (isNight) {
+      grad.addColorStop(0, '#0a0a2e');
+      grad.addColorStop(0.3, '#1a1a4e');
+      grad.addColorStop(0.6, '#2a2a5e');
+      grad.addColorStop(1, '#3a3a6e');
+    } else {
+      grad.addColorStop(0, '#1e90ff');
+      grad.addColorStop(0.3, '#4db8ff');
+      grad.addColorStop(0.6, '#87ceeb');
+      grad.addColorStop(1, '#b0e0e6');
+    }
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, 350);
+
+    // Nuages animés (intégrés)
+    if (!isNight) {
+      drawCloud(120, 60, 1.0);
+      drawCloud(400, 90, 0.8);
+      drawCloud(650, 50, 1.2);
+      drawCloud(250, 130, 0.6);
+      drawCloud(550, 110, 0.9);
+    }
+    // Nuages ajoutés par le user
+    customClouds = customClouds.filter(c => c.x > -100);
+    for (const c of customClouds) {
+      drawCloud(c.x, c.y, c.scale);
+      c.x -= 0.2 * getSpeed();
+    }
+
+    if (isNight) {
+      ctx.fillStyle = '#fff';
+      for (let i = 0; i < 80; i++) {
+        const sx = (i * 137.5 + 50) % W;
+        const sy = (i * 89.3 + 20) % 300;
+        const size = 0.5 + Math.random() * 1.5;
+        const twinkle = 0.5 + 0.5 * Math.sin(time * 0.003 + i);
+        ctx.globalAlpha = twinkle * 0.8;
+        ctx.beginPath();
+        ctx.arc(sx, sy, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      ctx.fillStyle = '#f5e6b8';
+      ctx.shadowColor = '#f5e6b8';
+      ctx.shadowBlur = 40;
+      ctx.beginPath();
+      ctx.arc(650, 70, 35, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#0a0a2e';
+      ctx.shadowBlur = 0;
+      ctx.beginPath();
+      ctx.arc(665, 60, 28, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    if (!isNight) {
+      ctx.fillStyle = '#ffd700';
+      ctx.shadowColor = '#ffd700';
+      ctx.shadowBlur = 60;
+      ctx.beginPath();
+      ctx.arc(650, 70, 30, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(255,215,0,0.15)';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 12; i++) {
+        const angle = (i / 12) * Math.PI * 2 + time * 0.00005;
+        ctx.beginPath();
+        ctx.moveTo(650 + Math.cos(angle) * 35, 70 + Math.sin(angle) * 35);
+        ctx.lineTo(650 + Math.cos(angle) * 55, 70 + Math.sin(angle) * 55);
+        ctx.stroke();
+      }
+    }
+  }
+
+  function drawCloud(x, y, scale) {
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.shadowColor = 'rgba(255,255,255,0.2)';
+    ctx.shadowBlur = 20;
+    const offset = Math.sin(time * 0.0005 + x) * 10;
+    ctx.beginPath();
+    ctx.arc(x + offset, y, 30 * scale, 0, Math.PI * 2);
+    ctx.arc(x + 35 * scale + offset, y - 10, 25 * scale, 0, Math.PI * 2);
+    ctx.arc(x + 60 * scale + offset, y, 28 * scale, 0, Math.PI * 2);
+    ctx.arc(x + 30 * scale + offset, y + 8, 22 * scale, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  function drawSea() {
+    const grad = ctx.createLinearGradient(0, 320, 0, H);
+    if (isNight) {
+      grad.addColorStop(0, '#0a2a5a');
+      grad.addColorStop(0.3, '#06204a');
+      grad.addColorStop(0.7, '#041538');
+      grad.addColorStop(1, '#020a1e');
+    } else {
+      grad.addColorStop(0, '#1e90ff');
+      grad.addColorStop(0.3, '#1a7acc');
+      grad.addColorStop(0.7, '#1565a0');
+      grad.addColorStop(1, '#0d4a78');
+    }
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 320, W, 280);
+
+    // Vagues
+    for (let row = 0; row < 18; row++) {
+      const y = 330 + row * 15;
+      const alpha = 0.3 - row * 0.015;
+      if (alpha <= 0) break;
+      ctx.fillStyle = isNight ? `rgba(100,180,255,${alpha * 0.4})` : `rgba(255,255,255,${alpha})`;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      for (let x = 0; x <= W; x += 4) {
+        const speed = getSpeed();
+        const wave = Math.sin((x * 0.02) + time * 0.002 + row * 0.5) * 4 * speed
+                   + Math.sin((x * 0.04) + time * 0.003 + row * 0.3) * 2 * speed;
+        ctx.lineTo(x, y + wave);
+      }
+      ctx.lineTo(W, H);
+      ctx.lineTo(0, H);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Éclaboussures (ripples)
+    splashes = splashes.filter(s => s.alpha > 0);
+    for (const s of splashes) {
+      s.radius += 1.5 * getSpeed();
+      s.alpha -= 0.008;
+      if (s.alpha <= 0) continue;
+      ctx.strokeStyle = isNight ? `rgba(200,230,255,${s.alpha * 0.5})` : `rgba(255,255,255,${s.alpha})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+      ctx.stroke();
+      // Second cercle intérieur
+      if (s.radius > 8) {
+        ctx.strokeStyle = isNight ? `rgba(200,230,255,${s.alpha * 0.3})` : `rgba(255,255,255,${s.alpha * 0.5})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.radius * 0.6, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    // Reflets
+    const lightColor = isNight ? 'rgba(245,230,184,' : 'rgba(255,215,0,';
+    for (let i = 0; i < 15; i++) {
+      const y = 340 + i * 14;
+      const alpha = 0.15 - i * 0.008;
+      if (alpha <= 0) break;
+      const wobble = Math.sin(time * 0.005 + i * 0.7) * 8;
+      ctx.fillStyle = lightColor + Math.max(0, alpha) + ')';
+      const cx = 650 + wobble;
+      ctx.fillRect(cx - 15 - i * 0.5, y, 30 + i, 3);
+    }
+  }
+
+  function drawBoat() {
+    const bx = boatX, by = 345;
+    const bobY = Math.sin(time * 0.002) * 3;
+    const tilt = Math.sin(time * 0.0015) * 0.03 * getSpeed();
+
+    ctx.save();
+    ctx.translate(bx, by + bobY);
+    ctx.rotate(tilt);
+
+    // Coque
+    ctx.fillStyle = isNight ? '#3a2010' : '#5c3a1e';
+    ctx.strokeStyle = isNight ? '#1a0a00' : '#3a2010';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-60, 0);
+    ctx.lineTo(-40, 35);
+    ctx.lineTo(40, 35);
+    ctx.lineTo(70, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Ligne de flottaison
+    ctx.fillStyle = isNight ? '#8b4513' : '#a0522d';
+    ctx.fillRect(-55, 5, 115, 6);
+
+    // Pont
+    ctx.fillStyle = isNight ? '#4a3018' : '#7a5030';
+    ctx.fillRect(-45, -3, 100, 8);
+    ctx.strokeRect(-45, -3, 100, 8);
+
+    // Cabine
+    ctx.fillStyle = isNight ? '#5a4020' : '#8b6b3a';
+    ctx.strokeStyle = isNight ? '#3a2010' : '#5c3a1e';
+    ctx.fillRect(-15, -30, 35, 28);
+    ctx.strokeRect(-15, -30, 35, 28);
+
+    ctx.fillStyle = isNight ? '#4a3018' : '#7a5030';
+    ctx.fillRect(-18, -33, 40, 5);
+
+    // Fenêtres
+    ctx.fillStyle = isNight ? '#6ab0ff' : '#87ceeb';
+    ctx.shadowColor = isNight ? 'rgba(106,176,255,0.5)' : 'rgba(135,206,235,0.5)';
+    ctx.shadowBlur = 8;
+    ctx.fillRect(-8, -22, 8, 8);
+    ctx.fillRect(5, -22, 8, 8);
+    ctx.shadowBlur = 0;
+
+    // Cheminée
+    ctx.fillStyle = isNight ? '#2a1a0a' : '#4a3018';
+    ctx.fillRect(20, -40, 10, 25);
+    ctx.fillStyle = isNight ? '#1a0a00' : '#2a1a0a';
+    ctx.fillRect(18, -43, 14, 5);
+
+    // Fumée
+    const smokeY = -45 - Math.sin(time * 0.004) * 5;
+    for (let i = 0; i < 5; i++) {
+      const sy = smokeY - i * 12 - time * 0.005 % 30;
+      const sx = 25 + Math.sin(time * 0.003 + i * 1.2) * 8 + i * 3;
+      const size = 8 + i * 3;
+      ctx.fillStyle = `rgba(200,200,200,${0.2 - i * 0.03})`;
+      ctx.beginPath();
+      ctx.arc(sx, sy % 600, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Mât
+    ctx.strokeStyle = isNight ? '#3a2010' : '#5c3a1e';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(30, 0);
+    ctx.lineTo(30, -60);
+    ctx.stroke();
+
+    // Voile
+    ctx.fillStyle = isNight ? '#c0b090' : '#f5f0e0';
+    ctx.strokeStyle = isNight ? '#908070' : '#d0c8b0';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(31, -50);
+    ctx.quadraticCurveTo(70, -40, 31, -10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(31, -45);
+    ctx.quadraticCurveTo(60, -35, 31, -15);
+    ctx.closePath();
+    ctx.fillStyle = isNight ? '#d0c0a0' : '#fff8ee';
+    ctx.fill();
+    ctx.stroke();
+
+    // Drapeau
+    ctx.fillStyle = '#e74c3c';
+    ctx.beginPath();
+    ctx.moveTo(30, -60);
+    ctx.lineTo(30, -50);
+    ctx.lineTo(20, -55);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawSunsetGlow() {
+    if (isNight) return;
+    const grad = ctx.createRadialGradient(400, 320, 10, 400, 320, 300);
+    grad.addColorStop(0, 'rgba(255,200,100,0.15)');
+    grad.addColorStop(0.5, 'rgba(255,150,50,0.08)');
+    grad.addColorStop(1, 'rgba(255,100,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 250, W, 150);
+  }
+
+  function drawRain() {
+    if (!rain) return;
+    ctx.strokeStyle = 'rgba(180,210,255,0.4)';
+    ctx.lineWidth = 1;
+    for (const drop of raindrops) {
+      ctx.beginPath();
+      ctx.moveTo(drop.x, drop.y);
+      ctx.lineTo(drop.x - 2, drop.y + drop.length);
+      ctx.stroke();
+      drop.y += drop.speed * getSpeed();
+      drop.x += 1 * getSpeed();
+      if (drop.y > H) { drop.y = -20; drop.x = Math.random() * W; }
+      if (drop.x > W + 20) drop.x = -20;
+    }
+  }
+
+  function drawSeagulls() {
+    if (isNight) return;
+    ctx.strokeStyle = 'rgba(50,50,70,0.5)';
+    ctx.lineWidth = 2;
+
+    // Mouettes effrayées qui s'envolent
+    scaredBirds = scaredBirds.filter(b => b.alpha > 0);
+    for (const b of scaredBirds) {
+      b.x += 2 * getSpeed();
+      b.y -= 1.5 * getSpeed();
+      b.alpha -= 0.008;
+      b.wingPhase += 0.3;
+      ctx.globalAlpha = Math.max(0, b.alpha);
+      const w = Math.sin(b.wingPhase) * 6;
+      ctx.beginPath();
+      ctx.moveTo(b.x, b.y);
+      ctx.lineTo(b.x + 8, b.y - 5 + w);
+      ctx.lineTo(b.x + 16, b.y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(b.x, b.y);
+      ctx.lineTo(b.x + 8, b.y + 5 - w);
+      ctx.lineTo(b.x + 16, b.y);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // Mouettes normales (cliquables)
+    for (let i = 0; i < 4; i++) {
+      const gx = (time * 0.05 + i * 200) % (W + 100) - 50;
+      const gy = 80 + i * 25 + Math.sin(time * 0.005 + i * 3) * 15;
+      const wing = Math.sin(time * 0.01 + i * 2) * 5;
+      // Stocker la position pour détection de clic
+      if (!birds[i]) birds[i] = {};
+      birds[i].x = gx;
+      birds[i].y = gy;
+      birds[i].radius = 16;
+
+      ctx.beginPath();
+      ctx.moveTo(gx, gy);
+      ctx.lineTo(gx + 8, gy - 5 + wing);
+      ctx.lineTo(gx + 16, gy);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(gx, gy);
+      ctx.lineTo(gx + 8, gy + 5 - wing);
+      ctx.lineTo(gx + 16, gy);
+      ctx.stroke();
+    }
+
+    // Détection de clic sur les mouettes
+    if (birdScareCooldown > 0) birdScareCooldown--;
+  }
+
+  // Gestionnaire de clic pour les mouettes (appelé depuis le clic canvas)
+  canvas.addEventListener('click', e => {
+    const rect = canvas.getBoundingClientRect();
+    const cx = ((e.clientX - rect.left) / rect.width) * W;
+    const cy = ((e.clientY - rect.top) / rect.height) * H;
+
+    if (cy > 320) {
+      // Clic mer → splash (déjà géré)
+    } else if (cy < 300) {
+      // Clic ciel → nuage (déjà géré)
+    }
+
+    // Vérifier si on clique sur une mouette
+    if (birdScareCooldown <= 0) {
+      for (let i = 0; i < birds.length; i++) {
+        const b = birds[i];
+        if (b && Math.hypot(cx - b.x, cy - b.y) < b.radius) {
+          scaredBirds.push({ x: b.x, y: b.y, alpha: 1, wingPhase: 0 });
+          // Faire réapparaître une nouvelle mouette ailleurs plus tard
+          birdScareCooldown = 60;
+          break;
+        }
+      }
+    }
+  });
+
+  function drawLightHouse() {
+    const lx = 720, ly = 320;
+    ctx.fillStyle = isNight ? '#4a4a4a' : '#8b8b8b';
+    ctx.beginPath();
+    ctx.moveTo(lx - 12, ly);
+    ctx.lineTo(lx - 8, ly - 60);
+    ctx.lineTo(lx + 8, ly - 60);
+    ctx.lineTo(lx + 12, ly);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = isNight ? '#2a2a2a' : '#5a5a5a';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.fillStyle = isNight ? '#6a2a2a' : '#c0392b';
+    for (let i = 0; i < 3; i++) {
+      ctx.fillRect(lx - 10, ly - 12 - i * 16, 20, 6);
+    }
+
+    ctx.fillStyle = isNight ? '#2a2a2a' : '#555';
+    ctx.fillRect(lx - 10, ly - 65, 20, 8);
+
+    const lightOn = Math.sin(time * 0.006) > 0;
+    if (lightOn) {
+      ctx.fillStyle = isNight ? 'rgba(255,255,200,0.8)' : 'rgba(255,255,200,0.3)';
+      ctx.shadowColor = 'rgba(255,255,200,0.6)';
+      ctx.shadowBlur = 30;
+      ctx.beginPath();
+      ctx.arc(lx, ly - 62, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255,255,200,0.05)';
+      ctx.beginPath();
+      ctx.moveTo(lx, ly - 62);
+      ctx.lineTo(lx - 120, ly - 120);
+      ctx.lineTo(lx - 100, ly);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  function drawFrame() {
+    ctx.clearRect(0, 0, W, H);
+    drawSky();
+    drawSunsetGlow();
+    drawLightHouse();
+    drawSea();
+    drawBoat();
+    drawSeagulls();
+    drawRain();
+  }
+
+  window.toggleAnim = toggleAnim;
+  window.toggleNight = toggleNight;
+  window.toggleRain = toggleRain;
+
+  requestAnimationFrame(animate);
+</script>
+</body>
+</html>

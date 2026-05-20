@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laurent Habib — TCE & Serrurerie</title>
+<style>
+  /* ===== RESET & VARIABLES ===== */
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --amber:#d97706;
+    --amber-light:#f59e0b;
+    --amber-bg:#fffbeb;
+    --blue:#1e40af;
+    --blue-light:#3b82f6;
+    --blue-bg:#eff6ff;
+    --ink:#1c1917;
+    --ink-muted:#57534e;
+    --surface:#fafaf9;
+    --surface-card:#ffffff;
+    --border:#e7e5e4;
+    --radius:12px;
+    --radius-sm:8px;
+    --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
+    --shadow-lg:0 10px 25px rgba(0,0,0,.08);
+    --font:'Inter',system-ui,-apple-system,sans-serif;
+    --max-w:1200px;
+  }
+  html{scroll-behavior:smooth}
+  body{font-family:var(--font);background:var(--surface);color:var(--ink);line-height:1.6}
+  a{color:inherit;text-decoration:none}
+  img{max-width:100%;display:block}
+
+  /* ===== UTILITY ===== */
+  .container{max-width:var(--max-w);margin:0 auto;padding:0 24px}
+  .section{padding:80px 0}
+  .section-title{font-size:2rem;font-weight:700;margin-bottom:8px}
+  .section-sub{color:var(--ink-muted);font-size:1.1rem;margin-bottom:48px}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:14px 28px;border-radius:var(--radius-sm);
+    font-weight:600;font-size:1rem;cursor:pointer;border:none;
+    transition:all .2s;
+  }
+  .btn-primary{background:var(--amber);color:#fff}
+  .btn-primary:hover{background:#b45309;transform:translateY(-1px)}
+  .btn-urgent{background:#dc2626;color:#fff;animation:pulse 2s infinite}
+  .btn-urgent:hover{background:#b91c1c;transform:translateY(-1px)}
+  .btn-outline{background:transparent;border:2px solid var(--amber);color:var(--amber)}
+  .btn-outline:hover{background:var(--amber);color:#fff}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4)}50%{box-shadow:0 0 0 12px rgba(220,38,38,0)}}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+
+  /* ===== NAV ===== */
+  .nav{
+    position:fixed;top:0;left:0;right:0;z-index:100;
+    background:rgba(255,255,255,.95);backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--border);
+    padding:0 24px;
+  }
+  .nav-inner{
+    max-width:var(--max-w);margin:0 auto;
+    display:flex;align-items:center;justify-content:space-between;
+    height:64px;
+  }
+  .nav-logo{font-weight:800;font-size:1.2rem;display:flex;align-items:center;gap:8px}
+  .nav-logo span{color:var(--amber)}
+  .nav-links{display:flex;gap:4px;list-style:none}
+  .nav-links a{
+    padding:8px 16px;border-radius:var(--radius-sm);
+    font-weight:500;font-size:.9rem;transition:background .2s;
+  }
+  .nav-links a:hover,.nav-links a.active{background:var(--border)}
+  .nav-phone{
+    display:flex;align-items:center;gap:6px;
+    background:#dc2626;color:#fff;padding:8px 18px;
+    border-radius:var(--radius-sm);font-weight:700;font-size:.95rem;
+    transition:background .2s;
+  }
+  .nav-phone:hover{background:#b91c1c}
+  .nav-toggle{display:none;background:none;border:none;font-size:1.5rem;cursor:pointer;padding:4px}
+
+  /* ===== PAGES (spa) ===== */
+  .page{display:none;padding-top:64px}
+  .page.active{display:block}
+
+  /* ===== HERO ===== */
+  .hero{
+    min-height:90vh;display:flex;align-items:center;
+    background:linear-gradient(135deg,#fffbeb 0%,#fef3c7 50%,#fde68a 100%);
+    position:relative;overflow:hidden;
+  }
+  .hero::before{
+    content:'';position:absolute;right:-5%;top:-10%;
+    width:600px;height:600px;border-radius:50%;
+    background:radial-gradient(circle,rgba(217,119,6,.08) 0%,transparent 70%);
+  }
+  .hero-content{position:relative;z-index:1;max-width:680px}
+  .hero-badge{
+    display:inline-flex;align-items:center;gap:6px;
+    background:rgba(217,119,6,.1);color:var(--amber);
+    padding:6px 14px;border-radius:999px;font-size:.85rem;font-weight:600;
+    margin-bottom:24px;
+  }
+  .hero h1{font-size:3.5rem;line-height:1.1;font-weight:800;margin-bottom:20px}
+  .hero h1 span{color:var(--amber)}
+  .hero p{font-size:1.2rem;color:var(--ink-muted);margin-bottom:36px;max-width:560px}
+  .hero-btns{display:flex;gap:16px;flex-wrap:wrap}
+  .hero-stats{
+    display:flex;gap:48px;margin-top:60px;padding-top:40px;
+    border-top:1px solid var(--border);
+  }
+  .hero-stat{text-align:center}
+  .hero-stat-num{font-size:1.8rem;font-weight:800;color:var(--amber)}
+  .hero-stat-label{font-size:.85rem;color:var(--ink-muted);margin-top:2px}
+
+  /* ===== CARDS ===== */
+  .card{
+    background:var(--surface-card);border-radius:var(--radius);
+    padding:32px;border:1px solid var(--border);
+    transition:all .2s;cursor:default;
+  }
+  .card:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px)}
+  .card-icon{font-size:2rem;margin-bottom:16px;display:block}
+  .card h3{font-size:1.15rem;font-weight:700;margin-bottom:8px}
+  .card p{font-size:.9rem;color:var(--ink-muted);line-height:1.5}
+
+  /* ===== SERVICES TCE / SERRURERIE ===== */
+  .service-category{margin-bottom:48px}
+  .service-category h3{
+    font-size:1.3rem;font-weight:700;margin-bottom:16px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .service-list{display:grid;grid-template-columns:1fr 1fr;gap:12px;list-style:none}
+  .service-list li{
+    display:flex;align-items:center;gap:10px;
+    padding:12px 16px;background:var(--surface);border-radius:var(--radius-sm);
+    border:1px solid var(--border);font-size:.9rem;
+  }
+  .service-list li::before{content:'✓';color:var(--amber);font-weight:700}
+
+  /* ===== URGENCE BANNER ===== */
+  .urgence-banner{
+    background:linear-gradient(135deg,#dc2626,#991b1b);
+    color:#fff;border-radius:var(--radius);padding:40px 48px;
+    display:flex;align-items:center;justify-content:space-between;
+    gap:24px;margin-bottom:60px;
+  }
+  .urgence-banner h3{font-size:1.5rem;font-weight:800}
+  .urgence-banner p{font-size:1rem;opacity:.9;margin-top:4px}
+  .urgence-banner .phone-big{font-size:2rem;font-weight:900;white-space:nowrap}
+
+  /* ===== REALISATIONS ===== */
+  .gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .gallery-item{
+    aspect-ratio:4/3;border-radius:var(--radius);
+    background:linear-gradient(135deg,#e7e5e4,#d6d3d1);
+    display:flex;align-items:center;justify-content:center;
+    font-size:.9rem;color:var(--ink-muted);text-align:center;padding:16px;
+    border:1px dashed var(--border);
+  }
+
+  /* ===== CONTACT ===== */
+  .contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px}
+  .contact-info h3{font-size:1.2rem;font-weight:700;margin-bottom:24px}
+  .contact-item{display:flex;gap:16px;margin-bottom:20px;align-items:flex-start}
+  .contact-item-icon{font-size:1.3rem;min-width:28px}
+  .contact-item-label{font-weight:600;font-size:.85rem;color:var(--ink-muted)}
+  .contact-item-value{font-size:1rem}
+  .form-group{margin-bottom:20px}
+  .form-group label{display:block;font-weight:600;font-size:.9rem;margin-bottom:6px}
+  .form-group input,.form-group select,.form-group textarea{
+    width:100%;padding:12px 16px;border:1px solid var(--border);
+    border-radius:var(--radius-sm);font-size:1rem;font-family:var(--font);
+    transition:border .2s;background:#fff;
+  }
+  .form-group input:focus,.form-group select:focus,.form-group textarea:focus{
+    outline:none;border-color:var(--amber);box-shadow:0 0 0 3px rgba(217,119,6,.1);
+  }
+  .form-group textarea{resize:vertical;min-height:120px}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+  /* ===== FOOTER ===== */
+  .footer{
+    background:var(--ink);color:#a8a29e;padding:48px 0;margin-top:80px;
+  }
+  .footer-inner{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px}
+  .footer h4{color:#fff;font-size:.95rem;font-weight:700;margin-bottom:16px}
+  .footer ul{list-style:none}
+  .footer li{margin-bottom:8px}
+  .footer a{font-size:.9rem;transition:color .2s}
+  .footer a:hover{color:#fff}
+  .footer-logo{font-size:1.2rem;font-weight:800;color:#fff;margin-bottom:12px;display:block}
+  .footer-logo span{color:var(--amber)}
+  .footer p{font-size:.9rem;line-height:1.6}
+  .footer-bottom{border-top:1px solid #292524;margin-top:40px;padding-top:24px;text-align:center;font-size:.85rem}
+
+  /* ===== RESPONSIVE ===== */
+  @media(max-width:768px){
+    .nav-links,.nav-phone{display:none}
+    .nav-toggle{display:block}
+    .nav.open .nav-links,.nav.open .nav-phone{
+      display:flex;flex-direction:column;gap:0;
+      position:absolute;top:64px;left:0;right:0;
+      background:#fff;border-bottom:1px solid var(--border);
+      padding:12px 24px 20px;
+    }
+    .nav.open .nav-phone{margin-top:12px;justify-content:center}
+    .hero h1{font-size:2.2rem}
+    .hero-stats{flex-wrap:wrap;gap:24px}
+    .hero-stats>div{flex:1;min-width:80px}
+    .grid-2,.grid-3,.grid-4,.contact-grid{grid-template-columns:1fr}
+    .service-list{grid-template-columns:1fr}
+    .urgence-banner{flex-direction:column;text-align:center;padding:32px 24px}
+    .urgence-banner .phone-big{font-size:1.5rem}
+    .form-row{grid-template-columns:1fr}
+    .footer-inner{grid-template-columns:1fr 1fr;gap:32px}
+    .gallery-grid{grid-template-columns:1fr 1fr}
+    .section{padding:48px 0}
+    .section-title{font-size:1.6rem}
+  }
+  @media(max-width:480px){
+    .gallery-grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo" onclick="navigate('accueil')">🏗️ <span>LH</span> TCE & Serrurerie</a>
+    <button class="nav-toggle" onclick="document.getElementById('nav').classList.toggle('open')">☰</button>
+    <ul class="nav-links">
+      <li><a href="#" onclick="navigate('accueil')" class="active" data-page="accueil">Accueil</a></li>
+      <li><a href="#" onclick="navigate('tce')" data-page="tce">TCE</a></li>
+      <li><a href="#" onclick="navigate('serrurerie')" data-page="serrurerie">Serrurerie</a></li>
+      <li><a href="#" onclick="navigate('realisations')" data-page="realisations">Réalisations</a></li>
+      <li><a href="#" onclick="navigate('contact')" data-page="contact">Contact</a></li>
+    </ul>
+    <a href="tel:+33600000000" class="nav-phone">📞 06 00 00 00 00</a>
+  </div>
+</nav>
+
+<!-- ===== PAGE: ACCUEIL ===== -->
+<section class="page active" id="page-accueil">
+  <div class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-badge">🏆 Artisan depuis 2025</div>
+        <h1>Votre expert <span>Tous Corps d'État</span> & <span>Serrurerie</span></h1>
+        <p>De la rénovation complète au dépannage serrurerie en urgence, je prends en charge vos travaux avec professionnalisme et réactivité.</p>
+        <div class="hero-btns">
+          <a href="#" class="btn btn-primary" onclick="navigate('contact')">📋 Demander un devis gratuit</a>
+          <a href="#" class="btn btn-urgent" onclick="navigate('serrurerie')">🔑 Urgence serrurerie 24h/24</a>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat"><div class="hero-stat-num">🔨</div><div class="hero-stat-label">Tous Corps d'État</div></div>
+          <div class="hero-stat"><div class="hero-stat-num">🔑</div><div class="hero-stat-label">Serrurerie</div></div>
+          <div class="hero-stat"><div class="hero-stat-num">📞</div><div class="hero-stat-label">Urgence 24h/7j</div></div>
+          <div class="hero-stat"><div class="hero-stat-num">✅</div><div class="hero-stat-label">Devis gratuit</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="container">
+      <h2 class="section-title">Nos deux expertises</h2>
+      <p class="section-sub">Un seul interlocuteur pour tous vos travaux</p>
+      <div class="grid-2">
+        <div class="card" onclick="navigate('tce')" style="cursor:pointer">
+          <span class="card-icon">🔨</span>
+          <h3>Tous Corps d'État</h3>
+          <p>Maçonnerie, plomberie, électricité, peinture, menuiserie — je gère votre chantier de A à Z, de la rénovation partielle à la construction neuve.</p>
+          <br><a href="#" onclick="event.stopPropagation();navigate('tce')" style="color:var(--amber);font-weight:600">Voir les services →</a>
+        </div>
+        <div class="card" onclick="navigate('serrurerie')" style="cursor:pointer">
+          <span class="card-icon">🔑</span>
+          <h3>Serrurerie & Sécurité</h3>
+          <p>Dépannage d'urgence 24h/24, pose de serrures A2P, portes blindées, alarmes, vidéophones — protégez votre domicile et votre entreprise.</p>
+          <br><a href="#" onclick="event.stopPropagation();navigate('serrurerie')" style="color:var(--blue);font-weight:600">Voir les services →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" style="background:var(--amber-bg)">
+    <div class="container">
+      <h2 class="section-title">Pourquoi choisir LH TCE & Serrurerie ?</h2>
+      <p class="section-sub">Un artisan de confiance à votre écoute</p>
+      <div class="grid-3">
+        <div class="card"><span class="card-icon">🤝</span><h3>Interlocuteur unique</h3><p>Un seul contact pour tous vos travaux. Plus besoin de coordonner plusieurs artisans.</p></div>
+        <div class="card"><span class="card-icon">📋</span><h3>Devis gratuit & transparent</h3><p>Un devis clair et détaillé, sans surprise. Prix fermes et définitifs.</p></div>
+        <div class="card"><span class="card-icon">⚡</span><h3>Réactivité</h3><p>Intervention rapide, notamment pour les dépannages serrurerie en urgence.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="container">
+      <h2 class="section-title">Zones d'intervention</h2>
+      <p class="section-sub">Je me déplace chez vous</p>
+      <div class="grid-4">
+        <div class="card"><span style="font-size:1.5rem;display:block;margin-bottom:8px">📍</span><h3>Paris</h3><p>Paris et proche banlieue</p></div>
+        <div class="card"><span style="font-size:1.5rem;display:block;margin-bottom:8px">📍</span><h3>Île-de-France</h3><p>Petite et grande couronne</p></div>
+        <div class="card"><span style="font-size:1.5rem;display:block;margin-bottom:8px">📍</span><h3>À définir</h3><p>Contactez-moi pour vérifier</p></div>
+        <div class="card"><span style="font-size:1.5rem;display:block;margin-bottom:8px">🎯</span><h3>Sur devis</h3><p>Déplacement possible sous conditions</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PAGE: TCE ===== -->
+<section class="page" id="page-tce">
+  <div class="section" style="padding-top:120px">
+    <div class="container">
+      <span style="font-size:3rem;display:block;margin-bottom:8px">🔨</span>
+      <h2 class="section-title">Tous Corps d'État</h2>
+      <p class="section-sub">Rénovation complète ou partielle — je gère l'intégralité de votre chantier</p>
+
+      <div class="service-category">
+        <h3>🧱 Maçonnerie & Gros Œuvre</h3>
+        <ul class="service-list">
+          <li>Démolition et démolition sélective</li>
+          <li>Fondations et dalles béton</li>
+          <li>Montage de murs (parpaing, brique, pierre)</li>
+          <li>Ragréage et chapes</li>
+          <li>Ouvertures de murs porteurs</li>
+        </ul>
+      </div>
+
+      <div class="service-category">
+        <h3>🪚 Menuiserie & Agencement</h3>
+        <ul class="service-list">
+          <li>Pose de portes et fenêtres (bois, PVC, alu)</li>
+          <li>Placards sur mesure et dressing</li>
+          <li>Cuisines et salles de bain</li>
+          <li>Parquet et revêtements de sol</li>
+          <li>Plinthes et finitions</li>
+        </ul>
+      </div>
+
+      <div class="service-category">
+        <h3>💧 Plomberie & Sanitaire</h3>
+        <ul class="service-list">
+          <li>Réseau d'eau (cuivre, PER, multicouche)</li>
+          <li>Pose de sanitaires (WC, lavabo, douche, baignoire)</li>
+          <li>Chauffe-eau et cumulus</li>
+          <li>Dépannage fuites et bouchages</li>
+        </ul>
+      </div>
+
+      <div class="service-category">
+        <h3>⚡ Électricité</h3>
+        <ul class="service-list">
+          <li>Installation complète ou rénovation</li>
+          <li>Tableau électrique et mise aux normes</li>
+          <li>Prises, interrupteurs, éclairage</li>
+          <li>VMC et chauffage électrique</li>
+          <li>Domotique de base</li>
+        </ul>
+      </div>
+
+      <div class="service-category">
+        <h3>🎨 Peinture & Revêtements</h3>
+        <ul class="service-list">
+          <li>Peinture murs et plafonds (intérieur/extérieur)</li>
+          <li>Papier peint et toile de verre</li>
+          <li>Enduit décoratif et stuc</li>
+          <li>Revêtements muraux</li>
+        </ul>
+      </div>
+
+      <div class="service-category">
+        <h3>🧰 Plâtrerie & Isolation</h3>
+        <ul class="service-list">
+          <li>Plaques de plâtre (BA13, BA18)</li>
+          <li>Faux plafonds</li>
+          <li>Isolation thermique (laine de verre, laine de roche)</li>
+          <li>Isolation acoustique</li>
+          <li>Cloisons sèches et doublage</li>
+        </ul>
+      </div>
+
+      <div style="margin-top:48px;text-align:center">
+        <a href="#" class="btn btn-primary" onclick="navigate('contact')">📋 Demander un devis TCE</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PAGE: SERRURERIE ===== -->
+<section class="page" id="page-serrurerie">
+  <div class="section" style="padding-top:120px">
+    <div class="container">
+      <span style="font-size:3rem;display:block;margin-bottom:8px">🔑</span>
+      <h2 class="section-title">Serrurerie & Sécurité</h2>
+      <p class="section-sub">Installation, dépannage d'urgence et systèmes de sécurité</p>
+
+      <div class="urgence-banner">
+        <div>
+          <h3>🚨 Urgence serrurerie 24h/24 — 7j/7</h3>
+          <p>Porte claquée, clé cassée, serrure bloquée ? J'interviens sous 1 à 2 heures.</p>
+        </div>
+        <div>
+          <div class="phone-big">📞 06 00 00 00 00</div>
+        </div>
+      </div>
+
+      <div class="service-category">
+        <h3>🚪 Dépannage Urgent</h3>
+        <ul class="service-list">
+          <li>Porte claquée — ouverture rapide sans dégât</li>
+          <li>Clé cassée dans la serrure — extraction et réparation</li>
+          <li>Serrure bloquée — dégrippage et réparation</li>
+          <li>Perte de clés — remplacement du barillet</li>
+          <li>Porte blindée — ouverture et dépannage</li>
+        </ul>
+      </div>
+
+      <div class="service-category">
+        <h3>🔐 Installation & Remplacement</h3>
+        <ul class="service-list">
+          <li>Serrures standard (3 points, 5 points)</li>
+          <li>Barillets de sécurité (A2P BP1, BP2, BP3)</li>
+          <li>Serrures connectées (Nuki, Somfy, Yale)</li>
+          <li>Verrous et cadenas haute sécurité</li>
+          <li>Portes blindées (pose complète)</li>
+          <li>Blocs-portes (pose et réglage)</li>
+        </ul>
+      </div>
+
+      <div class="service-category">
+        <h3>🛡️ Sécurité & Protection</h3>
+        <ul class="service-list">
+          <li>Vidéophones / Interphones (filaire, sans fil, IP)</li>
+          <li>Caméras de surveillance (intérieur/extérieur)</li>
+          <li>Alarmes anti-intrusion (avec ou sans abonnement)</li>
+          <li>Contrôle d'accès (badges, codes, biométrie)</li>
+          <li>Grilles et volets roulants (motorisation et réparation)</li>
+        </ul>
+      </div>
+
+      <div class="service-category">
+        <h3>🔧 Entretien & Réparation</h3>
+        <ul class="service-list">
+          <li>Graissage et entretien des mécanismes</li>
+          <li>Réparation de serrures vétustes</li>
+          <li>Changement de combinaison (serrures à code)</li>
+          <li>Remplacement de cylindres</li>
+          <li>Mise à niveau des systèmes existants</li>
+        </ul>
+      </div>
+
+      <div class="service-category">
+        <h3>🔨 Serrurerie Métallerie</h3>
+        <ul class="service-list">
+          <li>Portails et portillons (motorisation)</li>
+          <li>Garde-corps et rampes</li>
+          <li>Portes de garage</li>
+          <li>Coffres-forts (installation et dépannage)</li>
+        </ul>
+      </div>
+
+      <div style="margin-top:48px;text-align:center;display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
+        <a href="tel:+33600000000" class="btn btn-urgent">📞 Urgence : 06 00 00 00 00</a>
+        <a href="#" class="btn btn-primary" onclick="navigate('contact')">📋 Demander un devis serrurerie</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PAGE: REALISATIONS ===== -->
+<section class="page" id="page-realisations">
+  <div class="section" style="padding-top:120px">
+    <div class="container">
+      <h2 class="section-title">Nos réalisations</h2>
+      <p class="section-sub">Quelques exemples de chantiers — photos à venir</p>
+      <div class="gallery-grid">
+        <div class="gallery-item">📸 Rénovation complète<br><small>Photos à venir</small></div>
+        <div class="gallery-item">📸 Salle de bain<br><small>Photos à venir</small></div>
+        <div class="gallery-item">📸 Cuisine équipée<br><small>Photos à venir</small></div>
+        <div class="gallery-item">📸 Pose de porte blindée<br><small>Photos à venir</small></div>
+        <div class="gallery-item">📸 Installation alarme<br><small>Photos à venir</small></div>
+        <div class="gallery-item">📸 Rénovation appartement<br><small>Photos à venir</small></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PAGE: CONTACT ===== -->
+<section class="page" id="page-contact">
+  <div class="section" style="padding-top:120px">
+    <div class="container">
+      <h2 class="section-title">Contact & Devis gratuit</h2>
+      <p class="section-sub">Parlons de votre projet — réponse sous 24h</p>
+      <div class="contact-grid">
+        <div>
+          <form onsubmit="handleForm(event)">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Nom *</label>
+                <input type="text" required placeholder="Votre nom">
+              </div>
+              <div class="form-group">
+                <label>Prénom *</label>
+                <input type="text" required placeholder="Votre prénom">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Email *</label>
+                <input type="email" required placeholder="votre@email.fr">
+              </div>
+              <div class="form-group">
+                <label>Téléphone *</label>
+                <input type="tel" required placeholder="06 XX XX XX XX">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Type de prestation *</label>
+              <select required>
+                <option value="">Sélectionnez...</option>
+                <option>Tous Corps d'État (rénovation)</option>
+                <option>Serrurerie — dépannage urgent</option>
+                <option>Serrurerie — installation/sécurité</option>
+                <option>Je ne sais pas encore</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Adresse du chantier</label>
+              <input type="text" placeholder="Adresse, code postal, ville">
+            </div>
+            <div class="form-group">
+              <label>Description du projet *</label>
+              <textarea required placeholder="Décrivez vos besoins..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">📩 Envoyer ma demande</button>
+            <p style="font-size:.8rem;color:var(--ink-muted);margin-top:12px;text-align:center">
+              * Champs obligatoires
+            </p>
+          </form>
+        </div>
+        <div class="contact-info">
+          <h3>📍 Mes coordonnées</h3>
+          <div class="contact-item">
+            <span class="contact-item-icon">📞</span>
+            <div>
+              <div class="contact-item-label">Téléphone</div>
+              <div class="contact-item-value"><strong>06 00 00 00 00</strong></div>
+            </div>
+          </div>
+          <div class="contact-item">
+            <span class="contact-item-icon">📱</span>
+            <div>
+              <div class="contact-item-label">Urgence serrurerie (24h/24)</div>
+              <div class="contact-item-value"><strong style="color:#dc2626">06 00 00 00 00</strong></div>
+            </div>
+          </div>
+          <div class="contact-item">
+            <span class="contact-item-icon">📧</span>
+            <div>
+              <div class="contact-item-label">Email</div>
+              <div class="contact-item-value">laurent.habib@gmail.com</div>
+            </div>
+          </div>
+          <div class="contact-item">
+            <span class="contact-item-icon">📍</span>
+            <div>
+              <div class="contact-item-label">Secteur d'intervention</div>
+              <div class="contact-item-value">Paris & Île-de-France</div>
+            </div>
+          </div>
+          <div class="contact-item">
+            <span class="contact-item-icon">🕐</span>
+            <div>
+              <div class="contact-item-label">Horaires</div>
+              <div class="contact-item-value">Lun–Ven : 8h–19h<br>Urgence serrurerie : 24h/24</div>
+            </div>
+          </div>
+
+          <div style="margin-top:32px;padding:20px;background:var(--amber-bg);border-radius:var(--radius);border:1px solid rgba(217,119,6,.2)">
+            <strong>🔑 Urgence serrurerie ?</strong>
+            <p style="font-size:.9rem;color:var(--ink-muted);margin-top:4px">Appelez-moi directement au <strong style="color:#dc2626">06 00 00 00 00</strong> — j'interviens sous 1 à 2 heures, même le week-end et les jours fériés.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-inner">
+      <div>
+        <span class="footer-logo">🏗️ <span>LH</span> TCE & Serrurerie</span>
+        <p>Votre artisan de confiance pour tous vos travaux de rénovation et de serrurerie. Devis gratuit, intervention rapide et travail de qualité.</p>
+      </div>
+      <div>
+        <h4>Services</h4>
+        <ul>
+          <li><a href="#" onclick="navigate('tce')">Tous Corps d'État</a></li>
+          <li><a href="#" onclick="navigate('serrurerie')">Serrurerie</a></li>
+          <li><a href="#" onclick="navigate('serrurerie')">Urgence 24h/24</a></li>
+          <li><a href="#" onclick="navigate('realisations')">Nos réalisations</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="tel:+33600000000">📞 06 00 00 00 00</a></li>
+          <li><a href="mailto:laurent.habib@gmail.com">📧 Email</a></li>
+          <li><a href="#" onclick="navigate('contact')">📋 Devis gratuit</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Informations</h4>
+        <ul>
+        <li><a href="#" onclick="navigate('contact')">Contact</a></li>
+        <li><a href="http://173.249.10.24:8081/index.html" target="_blank">📋 Application Devis</a></li>
+        <li>Mentions légales</li>
+          <li>Politique de confidentialité</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      © 2025 LH TCE & Serrurerie — SIRET à venir — Tous droits réservés
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Navigation SPA
+  function navigate(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+    const link = document.querySelector(`.nav-links a[data-page="${page}"]`);
+    if (link) link.classList.add('active');
+    document.getElementById('nav').classList.remove('open');
+    window.scrollTo({top: 0, behavior: 'smooth'});
+    return false;
+  }
+
+  // Gestionnaire formulaire
+  function handleForm(e) {
+    e.preventDefault();
+    alert('✅ Merci ! Votre demande a été envoyée.\n\nJe vous recontacterai sous 24h.\n\n📞 Pour une urgence serrurerie, appelez le 06 00 00 00 00');
+    e.target.reset();
+  }
+
+  // Highlight nav on scroll
+  window.addEventListener('scroll', () => {
+    const nav = document.getElementById('nav');
+    if (window.scrollY > 10) nav.style.borderBottomColor = 'var(--border)';
+    else nav.style.borderBottomColor = 'transparent';
+  });
+</script>
+
+</body>
+</html>

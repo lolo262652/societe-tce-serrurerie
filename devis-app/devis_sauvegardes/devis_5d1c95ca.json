@@ -1,0 +1,93 @@
+{
+  "id": "5d1c95ca",
+  "numero": "2025-001",
+  "date": "2026-05-18",
+  "type": "tce",
+  "tva": 20,
+  "acompte": 30,
+  "validite": 30,
+  "delai": "",
+  "clientNom": "AMG",
+  "clientEmail": "laurent.habib@gmail.com",
+  "clientAdresse": "156 Rue de Paris, Boulogne-Billa",
+  "clientTel": "0616372104",
+  "notes": "Conditions de paiement : 30% à la commande, solde à la livraison.\nGarantie décennale sur les ouvrages conformément à la loi Spinetta.\nGarantie biennale (2 ans) sur les équipements.",
+  "pieces": [
+    {
+      "nom": "Général",
+      "lignes": [
+        {
+          "description": "Démolition / démolition sélective (m²)",
+          "quantite": 1,
+          "unite": "m²",
+          "prixUnitaire": 28
+        }
+      ]
+    },
+    {
+      "nom": "Cuisine",
+      "lignes": [
+        {
+          "description": "Pose évier (encastré/sous-plan)",
+          "quantite": 1,
+          "unite": "unité",
+          "prixUnitaire": 150
+        },
+        {
+          "description": "Pose plan de travail",
+          "quantite": 1,
+          "unite": "unité",
+          "prixUnitaire": 180
+        },
+        {
+          "description": "Pose évier (encastré/sous-plan)",
+          "quantite": 1,
+          "unite": "unité",
+          "prixUnitaire": 150
+        }
+      ]
+    },
+    {
+      "nom": "Salle de bain",
+      "lignes": [
+        {
+          "description": "Ragréage sol (m²)",
+          "quantite": 1,
+          "unite": "m²",
+          "prixUnitaire": 20
+        },
+        {
+          "description": "Ouverture mur porteur",
+          "quantite": 1,
+          "unite": "forfait",
+          "prixUnitaire": 1500
+        },
+        {
+          "description": "Mur parpaing (fourniture + pose, m²)",
+          "quantite": 1,
+          "unite": "m²",
+          "prixUnitaire": 55
+        }
+      ]
+    },
+    {
+      "nom": "Chambre",
+      "lignes": [
+        {
+          "description": "Peinture murs chambre (m²)",
+          "quantite": 20,
+          "unite": "m²",
+          "prixUnitaire": 22
+        },
+        {
+          "description": "Forfait déplacement",
+          "quantite": 1,
+          "unite": "forfait",
+          "prixUnitaire": 40
+        }
+      ]
+    }
+  ],
+  "status": "brouillon",
+  "createdAt": "2026-05-18T17:50:47.209Z"
+}
