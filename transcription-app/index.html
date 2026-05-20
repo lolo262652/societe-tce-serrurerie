@@ -353,6 +353,16 @@ async function toggleRecording() {
     return;
   }
   try {
+    // Vérifier le contexte de sécurité (HTTPS ou localhost)
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      const section = document.getElementById('recordSection');
+      section.className = 'record-section';
+      section.querySelector('.icon').textContent = '🔒';
+      section.querySelector('.hint').innerHTML = '<span style="color:#f85149">❌ Le micro nécessite <strong>HTTPS</strong>.</span><br><small style="color:#8b949e">Sur Android, <code>getUserMedia</code> ne fonctionne qu\'en HTTPS.<br>👉 Utilise <strong>l\'import de fichier</strong> ci-dessous à la place.</small>';
+      btn.style.display = 'none';
+      document.getElementById('recordTimer').style.display = 'none';
+      return;
+    }
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     audioChunks = [];
     recordedBlob = null;
