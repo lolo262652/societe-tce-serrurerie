@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>לימוד עברית — Apprends l'hébreu</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Hebrew:wght@300;400;700&display=swap');
+  body{
+    font-family:'Segoe UI','Noto Sans Hebrew',Arial,sans-serif;
+    background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);
+    min-height:100vh;display:flex;justify-content:center;align-items:center;
+    padding:16px;color:#e0e0e0
+  }
+  .app{
+    max-width:440px;width:100%;background:rgba(22,22,54,.85);
+    backdrop-filter:blur(12px);border-radius:20px;padding:24px;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.06)
+  }
+
+  /* ─── HEADER ─── */
+  .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .header h1{font-size:1.1rem;display:flex;align-items:center;gap:6px;direction:rtl}
+  .header h1 span{color:#c084fc}
+  .streak{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.06);padding:6px 12px;border-radius:20px;font-size:.8rem}
+  .streak .num{color:#fbbf24;font-weight:700;font-size:1.1rem}
+  .streak .fire{font-size:1rem}
+
+  /* ─── PROGRESS BAR ─── */
+  .progress-section{margin-bottom:16px}
+  .progress-bar{height:4px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}
+  .progress-bar .fill{height:100%;background:linear-gradient(90deg,#c084fc,#818cf8);border-radius:4px;transition:width .5s ease}
+  .progress-text{display:flex;justify-content:space-between;font-size:.75rem;color:#9ca3af;margin-top:4px}
+
+  /* ─── CARD ─── */
+  .card-container{perspective:1200px;margin-bottom:16px;cursor:pointer}
+  .card{position:relative;width:100%;padding-bottom:75%;transition:transform .6s;transform-style:preserve-3d}
+  .card.flipped{transform:rotateY(180deg)}
+  .card-face{
+    position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;border-radius:16px;
+    backface-visibility:hidden;padding:30px;
+    border:1px solid rgba(255,255,255,.08);
+    box-shadow:0 8px 32px rgba(0,0,0,.3);
+  }
+  .card-front{
+    background:linear-gradient(145deg,#1e1b4b,#312e81);
+  }
+  .card-back{
+    background:linear-gradient(145deg,#1a1a2e,#16213e);
+    transform:rotateY(180deg);
+  }
+  .hebrew-word{
+    font-family:'Noto Sans Hebrew',sans-serif;
+    font-size:3.5rem;font-weight:700;color:#fff;margin-bottom:8px;
+    direction:rtl;text-shadow:0 2px 12px rgba(192,132,252,.3)
+  }
+  .hebrew-word.small{font-size:2.8rem}
+  .transcription{font-size:1rem;color:#9ca3af;margin-bottom:4px}
+  .hebrew-context{direction:rtl;font-size:.9rem;color:#c084fc;margin-top:8px}
+  .french-word{font-size:2.2rem;font-weight:700;color:#c084fc;margin-bottom:8px;direction:rtl}
+  .card-hint{font-size:.8rem;color:#6b7280;margin-top:12px}
+  .card-badge{
+    position:absolute;top:12px;right:12px;font-size:.7rem;
+    padding:4px 10px;border-radius:12px;background:rgba(255,255,255,.08);color:#9ca3af
+  }
+
+  /* ─── CHOICES ─── */
+  .choices{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+  .choice{
+    padding:14px;border:1px solid rgba(255,255,255,.1);border-radius:12px;
+    background:rgba(255,255,255,.04);color:#e0e0e0;font-size:1rem;
+    cursor:pointer;transition:all .15s;text-align:center;font-weight:500
+  }
+  .choice:hover{background:rgba(255,255,255,.08);border-color:#c084fc}
+  .choice.correct{background:rgba(34,197,94,.2);border-color:#22c55e;color:#22c55e}
+  .choice.wrong{background:rgba(239,68,68,.2);border-color:#ef4444;color:#ef4444}
+  .choice:disabled{cursor:default;opacity:.6}
+
+  /* ─── INPUT MODE ─── */
+  .input-section{display:flex;gap:8px;margin-bottom:16px}
+  .input-section input{
+    flex:1;padding:12px 16px;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.1);border-radius:12px;
+    color:#fff;font-size:1rem;outline:none;transition:border-color .15s;
+    font-family:'Noto Sans Hebrew',sans-serif
+  }
+  .input-section input:focus{border-color:#c084fc}
+  .input-section input::placeholder{color:#6b7280}
+  .input-section button{
+    padding:12px 20px;background:#c084fc;border:none;border-radius:12px;
+    color:#fff;font-weight:700;cursor:pointer;transition:background .15s
+  }
+  .input-section button:hover{background:#a855f7}
+  .input-section button:disabled{opacity:.5;cursor:default}
+  .input-result{margin-bottom:12px;padding:10px;border-radius:10px;text-align:center;font-size:.9rem;display:none}
+  .input-result.correct{display:block;background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.2)}
+  .input-result.wrong{display:block;background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.2)}
+
+  /* ─── MODE TOGGLE ─── */
+  .mode-toggle{display:flex;gap:4px;margin-bottom:16px;background:rgba(255,255,255,.04);border-radius:10px;padding:3px}
+  .mode-btn{flex:1;padding:8px;border:none;border-radius:8px;background:transparent;color:#9ca3af;font-size:.8rem;cursor:pointer;transition:all .15s;font-weight:600}
+  .mode-btn.active{background:rgba(192,132,252,.15);color:#c084fc}
+  .mode-btn:hover{color:#e0e0e0}
+
+  /* ─── STATS ─── */
+  .stats{display:flex;gap:8px;margin-bottom:16px}
+  .stat{flex:1;text-align:center;padding:10px;background:rgba(255,255,255,.04);border-radius:10px}
+  .stat .val{font-size:1.3rem;font-weight:700}
+  .stat .lbl{font-size:.7rem;color:#6b7280;text-transform:uppercase;margin-top:2px}
+  .stat .val.green{color:#22c55e}
+  .stat .val.red{color:#ef4446}
+  .stat .val.gold{color:#fbbf24}
+
+  /* ─── DAILY DONE ─── */
+  .daily-done{text-align:center;padding:30px 20px}
+  .daily-done .big{font-size:4rem;margin-bottom:12px}
+  .daily-done h2{color:#c084fc;margin-bottom:8px}
+  .daily-done p{color:#9ca3af;font-size:.9rem;margin-bottom:16px;line-height:1.5}
+  .daily-done .btn-next{padding:14px 40px;background:#c084fc;border:none;border-radius:12px;color:#fff;font-weight:700;font-size:1rem;cursor:pointer;transition:background .15s}
+  .daily-done .btn-next:hover{background:#a855f7}
+
+  .loading{text-align:center;padding:60px 20px;color:#6b7280}
+  .loading .spin{font-size:3rem;margin-bottom:12px;animation:pulse 1.5s infinite}
+  @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+
+  /* ─── ALEPH-BET ─── */
+  .alephbet-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px}
+  .alephbet-card{
+    padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:10px;
+    text-align:center;cursor:pointer;transition:all .15s;background:rgba(255,255,255,.03)
+  }
+  .alephbet-card:hover{border-color:#c084fc;background:rgba(192,132,252,.08)}
+  .alephbet-card .heb{font-family:'Noto Sans Hebrew',sans-serif;font-size:1.5rem;direction:rtl}
+  .alephbet-card .fr{font-size:.7rem;color:#9ca3af;margin-top:2px}
+  .alephbet-card .pron{font-size:.65rem;color:#6b7280}
+
+  /* ─── BOTTOM NAV ─── */
+  .bottom-nav{display:flex;gap:4px;margin-top:12px;background:rgba(255,255,255,.04);border-radius:10px;padding:3px}
+  .bottom-nav button{flex:1;padding:10px;border:none;border-radius:8px;background:transparent;color:#9ca3af;font-size:.75rem;cursor:pointer;transition:all .15s}
+  .bottom-nav button.active{background:rgba(192,132,252,.12);color:#c084fc}
+  .bottom-nav button:hover{color:#e0e0e0}
+  .bottom-nav .icon{font-size:1.2rem;display:block;margin-bottom:2px}
+
+  /* Scrollable content */
+  .scrollable{max-height:60vh;overflow-y:auto;padding-right:4px}
+  .scrollable::-webkit-scrollbar{width:3px}
+  .scrollable::-webkit-scrollbar-thumb{background:rgba(192,132,252,.3);border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <div class="header">
+    <h1>📖 <span>לימוד עברית</span></h1>
+    <div class="streak"><span class="fire">🔥</span> <span class="num" id="streakNum">0</span> jours</div>
+  </div>
+
+  <div class="progress-section">
+    <div class="progress-bar"><div class="fill" id="progressFill" style="width:0%"></div></div>
+    <div class="progress-text"><span id="progressLabel">0/0</span><span id="scoreLabel">0%</span></div>
+  </div>
+
+  <div class="bottom-nav" id="bottomNav">
+    <button class="active" onclick="showTab('learn')"><span class="icon">📚</span>Leçon</button>
+    <button onclick="showTab('alephbet')"><span class="icon">א</span>Aleph-Bet</button>
+    <button onclick="showTab('stats')"><span class="icon">📊</span>Statistiques</button>
+  </div>
+
+  <div id="tabContent" class="scrollable"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// ─── VOCABULAIRE HÉBREU ≪→ FRANÇAIS ───
+// ═══════════════════════════════════════════
+const VOCAB = [
+  // ─── SALUTATIONS & BASES ───
+  {heb:'שָׁלוֹם',trans:'shalom',fr:'Bonjour / Paix',cat:'Salutations'},
+  {heb:'תּוֹדָה',trans:'todah',fr:'Merci',cat:'Salutations'},
+  {heb:'בְּבַקָּשָׁה',trans:'bevakasha',fr:'S\'il vous plaît / De rien',cat:'Salutations'},
+  {heb:'סְלִיחָה',trans:'slicha',fr:'Pardon / Excusez-moi',cat:'Salutations'},
+  {heb:'לְהִתְרָאוֹת',trans:'lehitraot',fr:'Au revoir',cat:'Salutations'},
+  {heb:'בֹּקֶר טוֹב',trans:'boker tov',fr:'Bonjour (matin)',cat:'Salutations'},
+  {heb:'לַיְלָה טוֹב',trans:'layla tov',fr:'Bonne nuit',cat:'Salutations'},
+
+  // ─── FAMILLE ───
+  {heb:'אַבָּא',trans:'aba',fr:'Papa',cat:'Famille'},
+  {heb:'אִמָּא',trans:'ima',fr:'Maman',cat:'Famille'},
+  {heb:'אָח',trans:'ach',fr:'Frère',cat:'Famille'},
+  {heb:'אָחוֹת',trans:'achot',fr:'Sœur',cat:'Famille'},
+  {heb:'בֵּן',trans:'ben',fr:'Fils',cat:'Famille'},
+  {heb:'בַּת',trans:'bat',fr:'Fille',cat:'Famille'},
+  {heb:'סָבָּא',trans:'saba',fr:'Grand-père',cat:'Famille'},
+  {heb:'סָבְתָּא',trans:'savta',fr:'Grand-mère',cat:'Famille'},
+
+  // ─── NOMBRES 1-10 ───
+  {heb:'אֶחָד',trans:'echad',fr:'Un',cat:'Nombres'},
+  {heb:'שְׁתַּיִם',trans:'shtayim',fr:'Deux',cat:'Nombres'},
+  {heb:'שָׁלוֹשׁ',trans:'shalosh',fr:'Trois',cat:'Nombres'},
+  {heb:'אַרְבַּע',trans:'arba',fr:'Quatre',cat:'Nombres'},
+  {heb:'חָמֵשׁ',trans:'chamesh',fr:'Cinq',cat:'Nombres'},
+  {heb:'שֵׁשׁ',trans:'shesh',fr:'Six',cat:'Nombres'},
+  {heb:'שֶׁבַע',trans:'sheva',fr:'Sept',cat:'Nombres'},
+  {heb:'שְׁמוֹנֶה',trans:'shmone',fr:'Huit',cat:'Nombres'},
+  {heb:'תֵּשַׁע',trans:'tesha',fr:'Neuf',cat:'Nombres'},
+  {heb:'עֶשֶׂר',trans:'eser',fr:'Dix',cat:'Nombres'},
+
+  // ─── COULEURS ───
+  {heb:'אָדוֹם',trans:'adom',fr:'Rouge',cat:'Couleurs'},
+  {heb:'יָרוֹק',trans:'yarok',fr:'Vert',cat:'Couleurs'},
+  {heb:'כָּחוֹל',trans:'kachol',fr:'Bleu',cat:'Couleurs'},
+  {heb:'צָהוֹב',trans:'tsahov',fr:'Jaune',cat:'Couleurs'},
+  {heb:'לָבָן',trans:'lavan',fr:'Blanc',cat:'Couleurs'},
+  {heb:'שָׁחוֹר',trans:'shachor',fr:'Noir',cat:'Couleurs'},
+
+  // ─── NOURRITURE ───
+  {heb:'לֶחֶם',trans:'lechem',fr:'Pain',cat:'Nourriture'},
+  {heb:'מַיִם',trans:'mayim',fr:'Eau',cat:'Nourriture'},
+  {heb:'חָלָב',trans:'chalav',fr:'Lait',cat:'Nourriture'},
+  {heb:'תַּפּוּחַ',trans:'tapuach',fr:'Pomme',cat:'Nourriture'},
+  {heb:'בָּשָׂר',trans:'basar',fr:'Viande',cat:'Nourriture'},
+  {heb:'דָּג',trans:'dag',fr:'Poisson',cat:'Nourriture'},
+  {heb:'גְּבִינָה',trans:'gvina',fr:'Fromage',cat:'Nourriture'},
+  {heb:'יַיִן',trans:'yayin',fr:'Vin',cat:'Nourriture'},
+
+  // ─── CORPS ───
+  {heb:'רֹאשׁ',trans:'rosh',fr:'Tête',cat:'Corps'},
+  {heb:'יָד',trans:'yad',fr:'Main',cat:'Corps'},
+  {heb:'רֶגֶל',trans:'regel',fr:'Jambe / Pied',cat:'Corps'},
+  {heb:'עַיִן',trans:'ayin',fr:'Œil',cat:'Corps'},
+  {heb:'לֵב',trans:'lev',fr:'Cœur',cat:'Corps'},
+
+  // ─── VERBES COURANTS ───
+  {heb:'לֶאֱכוֹל',trans:'le\'echol',fr:'Manger',cat:'Verbes'},
+  {heb:'לִשְׁתּוֹת',trans:'lishtot',fr:'Boire',cat:'Verbes'},
+  {heb:'לָלֶכֶת',trans:'lalechet',fr:'Aller / Marcher',cat:'Verbes'},
+  {heb:'לִשְׁמוֹעַ',trans:'lishmoa',fr:'Entendre / Écouter',cat:'Verbes'},
+  {heb:'לִרְאוֹת',trans:'lir\'ot',fr:'Voir',cat:'Verbes'},
+  {heb:'לַעֲשׂוֹת',trans:'la\'asot',fr:'Faire',cat:'Verbes'},
+  {heb:'לוֹמַר',trans:'lomar',fr:'Dire',cat:'Verbes'},
+
+  // ─── OBJETS QUOTIDIENS ───
+  {heb:'סֵפֶר',trans:'sefer',fr:'Livre',cat:'Objets'},
+  {heb:'כִּיסֵא',trans:'kise',fr:'Chaise',cat:'Objets'},
+  {heb:'שֻׁלְחָן',trans:'shulchan',fr:'Table',cat:'Objets'},
+  {heb:'בַּיִת',trans:'bayit',fr:'Maison',cat:'Objets'},
+  {heb:'דֶּלֶת',trans:'delet',fr:'Porte',cat:'Objets'},
+  {heb:'חַלּוֹן',trans:'chalon',fr:'Fenêtre',cat:'Objets'},
+  {heb:'מַפְתֵּחַ',trans:'mafteach',fr:'Clé',cat:'Objets'},
+  {heb:'שָׁעוֹן',trans:'shaon',fr:'Montre / Horloge',cat:'Objets'},
+
+  // ─── LIEUX ───
+  {heb:'עִיר',trans:'ir',fr:'Ville',cat:'Lieux'},
+  {heb:'בֵּית־סֵפֶר',trans:'beit sefer',fr:'École',cat:'Lieux'},
+  {heb:'בֵּית־כְּנֶסֶת',trans:'beit knesset',fr:'Synagogue',cat:'Lieux'},
+  {heb:'חֲנוּת',trans:'chanut',fr:'Magasin',cat:'Lieux'},
+  {heb:'שּׁוּק',trans:'shuk',fr:'Marché',cat:'Lieux'},
+
+  // ─── NATURE ───
+  {heb:'שֶׁמֶשׁ',trans:'shemesh',fr:'Soleil',cat:'Nature'},
+  {heb:'יָרֵחַ',trans:'yareach',fr:'Lune',cat:'Nature'},
+  {heb:'כּוֹכָב',trans:'kochav',fr:'Étoile',cat:'Nature'},
+  {heb:'גֶּשֶׁם',trans:'geshem',fr:'Pluie',cat:'Nature'},
+  {heb:'רוּחַ',trans:'ruach',fr:'Vent / Esprit',cat:'Nature'},
+  {heb:'אֵשׁ',trans:'esh',fr:'Feu',cat:'Nature'},
+];
+
+// ─── ALPHABET ───
+const ALEPHBET = [
+  {heb:'א',nom:'Aleph',pron:'/ʔ/ — coup de glotte'},
+  {heb:'ב',nom:'Bet',pron:'b / v (avec dagesh)'},
+  {heb:'ג',nom:'Gimel',pron:'ɡ'},
+  {heb:'ד',nom:'Dalet',pron:'d'},
+  {heb:'ה',nom:'He',pron:'h'},
+  {heb:'ו',nom:'Vav',pron:'v / ou'},
+  {heb:'ז',nom:'Zayin',pron:'z'},
+  {heb:'ח',nom:'Het',pron:'χ (râclé)'},
+  {heb:'ט',nom:'Tet',pron:'t'},
+  {heb:'י',nom:'Yod',pron:'y / i'},
+  {heb:'כ',nom:'Kaf',pron:'k / kh (finale: ך)'},
+  {heb:'ל',nom:'Lamed',pron:'l'},
+  {heb:'מ',nom:'Mem',pron:'m (finale: ם)'},
+  {heb:'נ',nom:'Nun',pron:'n (finale: ן)'},
+  {heb:'ס',nom:'Samekh',pron:'s'},
+  {heb:'ע',nom:'Ayin',pron:'/ʕ/ — pharyngale'},
+  {heb:'פ',nom:'Pe',pron:'p / f (finale: ף)'},
+  {heb:'צ',nom:'Tsadi',pron:'ts (finale: ץ)'},
+  {heb:'ק',nom:'Qof',pron:'q'},
+  {heb:'ר',nom:'Resh',pron:'ʁ'},
+  {heb:'ש',nom:'Shin',pron:'ʃ / s'},
+  {heb:'ת',nom:'Tav',pron:'t'},
+];
+
+// ═══════════════════════════════════════════
+// ─── STATE ───
+// ═══════════════════════════════════════════
+const WORDS_PER_DAY = 10;
+const STREAK_KEY = 'heb_streak';
+const STATS_KEY = 'heb_stats';
+const DAILY_KEY = 'heb_daily_' + today();
+
+let mode = 'choices'; // 'choices' | 'type'
+let words = [];
+let currentIdx = 0;
+let answers = [];
+let sessionDone = false;
+let tab = 'learn';
+
+function today() { return new Date().toISOString().split('T')[0]; }
+
+function getStreak() {
+  const raw = localStorage.getItem(STREAK_KEY);
+  return raw ? JSON.parse(raw) : {count:0,last:''};
+}
+
+function saveStreak(streak) {
+  localStorage.setItem(STREAK_KEY, JSON.stringify(streak));
+}
+
+function getStats() {
+  const raw = localStorage.getItem(STATS_KEY);
+  return raw ? JSON.parse(raw) : {correct:0,total:0};
+}
+
+function getDaily() {
+  const raw = localStorage.getItem(DAILY_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
+
+function saveDaily(answersData) {
+  localStorage.setItem(DAILY_KEY, JSON.stringify({
+    date: today(),
+    answers: answersData
+  }));
+}
+
+// ═══════════════════════════════════════════
+// ─── GAME LOGIC ───
+// ═══════════════════════════════════════════
+function pickWords() {
+  // Pick random words, weighted by mistakes history
+  const daily = getDaily();
+  if (daily && daily.date === today()) {
+    // Resume today's session
+    answers = daily.answers;
+    return daily.answers.map(a => VOCAB.find(v => v.heb === a.heb)).filter(Boolean);
+  }
+
+  // New session: pick fresh words
+  const shuffled = [...VOCAB].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, WORDS_PER_DAY);
+}
+
+function getWrongCount(word) {
+  const stats = getStats();
+  // Simple: words that were answered wrong count as mistakes
+  // We track per-word history in daily
+  const daily = getDaily();
+  if (!daily) return 0;
+  return daily.answers.filter(a => a.heb === word.heb && !a.correct).length;
+}
+
+function initSession() {
+  words = pickWords();
+  if (!getDaily() || getDaily().date !== today()) {
+    answers = words.map(w => ({
+      heb: w.heb,
+      correct: false,
+      attempts: 0
+    }));
+    sessionDone = false;
+  } else {
+    const daily = getDaily();
+    answers = daily.answers;
+    sessionDone = daily.answers.every(a => a.correct);
+  }
+  currentIdx = 0;
+  render();
+}
+
+function getCurrentWord() {
+  // Skip already-correct words
+  let idx = currentIdx;
+  while (idx < answers.length && answers[idx].correct) {
+    idx++;
+  }
+  if (idx >= answers.length) {
+    sessionDone = true;
+    return null;
+  }
+  currentIdx = idx;
+  return words[idx];
+}
+
+function getChoices(word) {
+  // 3 wrong choices + 1 correct
+  const others = VOCAB.filter(w => w.heb !== word.heb);
+  const shuffled = others.sort(() => Math.random() - 0.5).slice(0, 3);
+  const choices = [word, ...shuffled].sort(() => Math.random() - 0.5);
+  return choices;
+}
+
+function answerHeb2Fr(selectedHeb) {
+  const word = getCurrentWord();
+  if (!word || sessionDone) return;
+  const correct = selectedHeb === word.heb;
+  recordAnswer(word, correct);
+  renderChoicesResult(selectedHeb, word.heb, correct);
+}
+
+function answerFr2Heb(selectedFr) {
+  const word = getCurrentWord();
+  if (!word || sessionDone) return;
+  const correct = selectedFr === word.fr;
+  recordAnswer(word, correct);
+  renderChoicesResult(selectedFr, word.fr, correct);
+}
+
+function recordAnswer(word, correct) {
+  const a = answers.find(a => a.heb === word.heb);
+  if (a) {
+    a.correct = correct;
+    a.attempts++;
+  }
+  const stats = getStats();
+  stats.total++;
+  if (correct) stats.correct++;
+  localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+  saveDaily(answers);
+
+  // Update streak
+  updateStreak();
+
+  setTimeout(() => {
+    currentIdx++;
+    render();
+  }, correct ? 800 : 2000);
+}
+
+function renderChoicesResult(selected, correctVal, isCorrect) {
+  const container = document.getElementById('choicesContainer');
+  if (!container) return;
+  const btns = container.querySelectorAll('.choice');
+  btns.forEach(btn => {
+    btn.disabled = true;
+    const val = btn.dataset.value;
+    if (val === correctVal) btn.classList.add('correct');
+    if (val === selected && !isCorrect) btn.classList.add('wrong');
+  });
+}
+
+function updateStreak() {
+  const streak = getStreak();
+  const d = today();
+  if (streak.last === d) return;
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  if (streak.last === yesterday || !streak.last) {
+    streak.count++;
+  } else {
+    streak.count = 1;
+  }
+  streak.last = d;
+  saveStreak(streak);
+  document.getElementById('streakNum').textContent = streak.count;
+}
+
+function checkTypedAnswer() {
+  const input = document.getElementById('typeInput');
+  const word = getCurrentWord();
+  if (!word || sessionDone || !input) return;
+  const val = input.value.trim();
+  if (!val) return;
+
+  // Check if typed matches the French translation (case-insensitive)
+  const correct = word.fr.toLowerCase().includes(val.toLowerCase()) ||
+                  val.toLowerCase().includes(word.fr.toLowerCase()) ||
+                  val.toLowerCase() === word.fr.toLowerCase() ||
+                  word.fr.toLowerCase() === val.toLowerCase();
+
+  const result = document.getElementById('typeResult');
+  if (correct) {
+    recordAnswer(word, true);
+    result.className = 'input-result correct';
+    result.textContent = '✅ Correct ! ' + word.fr;
+    input.value = '';
+    setTimeout(() => { result.style.display = 'none'; currentIdx++; render(); }, 800);
+  } else {
+    result.className = 'input-result wrong';
+    result.textContent = '❌ Non, la réponse est : ' + word.fr;
+    const a = answers.find(a => a.heb === word.heb);
+    if (a) a.attempts++;
+    input.value = '';
+    setTimeout(() => { result.style.display = 'none'; }, 1500);
+  }
+}
+
+// ═══════════════════════════════════════════
+// ─── RENDER ───
+// ═══════════════════════════════════════════
+function render() {
+  const content = document.getElementById('tabContent');
+  if (tab === 'learn') renderLearn(content);
+  else if (tab === 'alephbet') renderAlephBet(content);
+  else if (tab === 'stats') renderStats(content);
+}
+
+function renderLearn(container) {
+  const word = getCurrentWord();
+  const done = answers.filter(a => a.correct).length;
+  const total = answers.length;
+  const pct = total > 0 ? Math.round(done / total * 100) : 0;
+
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = `${done}/${total}`;
+  document.getElementById('scoreLabel').textContent = pct + '%';
+  document.getElementById('streakNum').textContent = getStreak().count;
+
+  if (sessionDone || done >= total) {
+    container.innerHTML = `
+      <div class="daily-done">
+        <div class="big">🎉</div>
+        <h2>Leçon du jour terminée !</h2>
+        <p>Tu as révisé <strong>${total}</strong> mots aujourd'hui.<br>
+        ${pct === 100 ? 'Parfait ! 🔥' : 'Continue comme ça, tu progresses ! 💪'}</p>
+        <button class="btn-next" onclick="startNewDay()">🔄 Nouvelle leçon</button>
+      </div>
+    `;
+    return;
+  }
+
+  if (!word) {
+    container.innerHTML = `<div class="loading"><div class="spin">📖</div><p>Chargement...</p></div>`;
+    return;
+  }
+
+  // Randomly decide: Hebrew→French or French→Hebrew
+  const heb2fr = Math.random() > 0.5;
+  const choices = getChoices(word);
+
+  container.innerHTML = `
+    <div class="mode-toggle">
+      <button class="mode-btn ${mode==='choices'?'active':''}" onclick="mode='choices';render()">🎯 Quiz</button>
+      <button class="mode-btn ${mode==='type'?'active':''}" onclick="mode='type';render()">✍️ Saisie</button>
+    </div>
+
+    ${mode === 'choices' ? `
+      <div class="card-container" onclick="this.querySelector('.card').classList.toggle('flipped')">
+        <div class="card">
+          <div class="card-face card-front">
+            <div class="card-badge">${word.cat}</div>
+            <div class="hebrew-word">${word.heb}</div>
+            <div class="transcription">${word.trans}</div>
+            <div class="card-hint">👆 Clique pour voir la traduction</div>
+          </div>
+          <div class="card-face card-back">
+            <div class="french-word">${word.fr}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="choices" id="choicesContainer">
+        ${choices.map(c => `
+          <button class="choice" data-value="${heb2fr ? c.heb : c.fr}"
+            onclick="${heb2fr ? `answerHeb2Fr('${c.heb}')` : `answerFr2Heb('${c.fr.replace(/'/g,"\\'")}')`}">
+            ${heb2fr ? c.heb : c.fr}
+          </button>
+        `).join('')}
+      </div>
+    ` : `
+      <div class="card-container">
+        <div class="card-face" style="position:relative;padding:40px 30px;background:linear-gradient(145deg,#1e1b4b,#312e81);border-radius:16px;border:1px solid rgba(255,255,255,.08);margin-bottom:16px;text-align:center">
+          <div class="card-badge" style="position:absolute;top:12px;right:12px;font-size:.7rem;padding:4px 10px;border-radius:12px;background:rgba(255,255,255,.08);color:#9ca3af">${word.cat}</div>
+          <div class="hebrew-word">${word.heb}</div>
+          <div class="transcription">${word.trans}</div>
+        </div>
+      </div>
+      <div style="font-size:.85rem;color:#9ca3af;margin-bottom:8px;text-align:center">✍️ Tape la traduction en français :</div>
+      <div class="input-section">
+        <input type="text" id="typeInput" placeholder="Écris en français..." onkeydown="if(event.key==='Enter')checkTypedAnswer()" autocomplete="off">
+        <button onclick="checkTypedAnswer()">✅</button>
+      </div>
+      <div class="input-result" id="typeResult" style="display:none"></div>
+    `}
+  `;
+
+  if (mode === 'type') {
+    const inp = document.getElementById('typeInput');
+    if (inp) setTimeout(() => inp.focus(), 100);
+  }
+}
+
+function renderAlephBet(container) {
+  container.innerHTML = `
+    <div style="margin-bottom:12px">
+      <h3 style="font-size:.95rem;color:#c084fc;margin-bottom:4px">🔤 L'alphabet hébreu</h3>
+      <p style="font-size:.8rem;color:#6b7280;margin-bottom:12px">Clique sur une lettre pour entendre sa prononciation</p>
+    </div>
+    <div class="alephbet-grid">
+      ${ALEPHBET.map(l => `
+        <div class="alephbet-card" onclick="speakLetter('${l.heb}')">
+          <div class="heb">${l.heb}</div>
+          <div class="fr">${l.nom}</div>
+          <div class="pron">${l.pron}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div style="font-size:.75rem;color:#6b7280;text-align:center;padding:8px">
+      💡 Les lettres avec une forme finale (ם ן ץ ף ך) s'écrivent différemment en fin de mot
+    </div>
+  `;
+}
+
+function renderStats(container) {
+  const stats = getStats();
+  const streak = getStreak();
+  const pct = stats.total > 0 ? Math.round(stats.correct / stats.total * 100) : 0;
+  const daily = getDaily();
+  const todayWords = daily && daily.date === today() ? daily.answers.length : 0;
+  const todayCorrect = daily && daily.date === today() ? daily.answers.filter(a => a.correct).length : 0;
+
+  container.innerHTML = `
+    <div class="stats">
+      <div class="stat"><div class="val gold">${streak.count}</div><div class="lbl">🔥 Jours</div></div>
+      <div class="stat"><div class="val ${pct >= 70 ? 'green' : 'gold'}">${pct}%</div><div class="lbl">Réussite</div></div>
+      <div class="stat"><div class="val">${stats.total}</div><div class="lbl">Mots vus</div></div>
+    </div>
+    <div style="background:rgba(255,255,255,.04);border-radius:12px;padding:16px;margin-bottom:12px">
+      <h3 style="font-size:.9rem;color:#c084fc;margin-bottom:8px">📅 Aujourd'hui</h3>
+      <p style="font-size:.85rem;color:#9ca3af">
+        Mots révisés : <strong>${todayWords}</strong><br>
+        Bonnes réponses : <strong style="color:#22c55e">${todayCorrect}</strong>
+        ${todayWords > 0 ? `(${Math.round(todayCorrect/todayWords*100)}%)` : ''}
+      </p>
+    </div>
+    <div style="background:rgba(255,255,255,.04);border-radius:12px;padding:16px">
+      <h3 style="font-size:.9rem;color:#c084fc;margin-bottom:8px">📈 Progression</h3>
+      <p style="font-size:.85rem;color:#9ca3af">
+        Vocabulaire total : <strong>${VOCAB.length}</strong> mots<br>
+        Mots différents vus : <strong style="color:#22c55e">${daily ? 'En cours' : '0'}</strong><br>
+        Catégories : ${[...new Set(VOCAB.map(v=>v.cat))].join(', ')}
+      </p>
+    </div>
+    <div style="text-align:center;margin-top:16px">
+      <button onclick="resetAll()" style="padding:8px 20px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:8px;color:#ef4444;font-size:.8rem;cursor:pointer">🗑 Réinitialiser</button>
+    </div>
+  `;
+}
+
+function startNewDay() {
+  localStorage.removeItem(DAILY_KEY);
+  words = [];
+  answers = [];
+  currentIdx = 0;
+  sessionDone = false;
+  render();
+}
+
+function resetAll() {
+  if (!confirm('Tout réinitialiser ? (compteur, streak, progression)')) return;
+  localStorage.removeItem(DAILY_KEY);
+  localStorage.removeItem(STATS_KEY);
+  localStorage.removeItem(STREAK_KEY);
+  document.getElementById('streakNum').textContent = '0';
+  startNewDay();
+}
+
+function showTab(t) {
+  tab = t;
+  document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.bottom-nav button').forEach(b => {
+    if (b.textContent.includes({learn:'Leçon',alephbet:'Aleph',stats:'Stat'}[t])) b.classList.add('active');
+  });
+  render();
+}
+
+function speakLetter(letter) {
+  if ('speechSynthesis' in window) {
+    const u = new SpeechSynthesisUtterance(letter);
+    u.lang = 'he-IL';
+    u.rate = 0.7;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  }
+}
+
+// ═══════════════════════════════════════════
+// ─── INIT ───
+// ═══════════════════════════════════════════
+initSession();
+</script>
+</body>
+</html>
