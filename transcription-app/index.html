@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transcription Réunions 🎙️</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:#0d1117;color:#e6edf3;display:flex;height:100vh;overflow:hidden}
+  
+  /* ─── SIDEBAR ─── */
+  .sidebar{width:340px;min-width:340px;background:#161b22;border-right:1px solid #30363d;display:flex;flex-direction:column;overflow:hidden}
+  .sidebar-header{padding:16px;border-bottom:1px solid #30363d}
+  .sidebar-header h1{font-size:1.1rem;display:flex;align-items:center;gap:8px}
+  .sidebar-header h1 span{color:#58a6ff}
+  .new-btn{display:block;width:100%;margin-top:10px;padding:10px;background:#238636;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:.9rem;transition:background .15s}
+  .new-btn:hover{background:#2ea043}
+  
+  .search-box{padding:10px 16px}
+  .search-box input{width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:.85rem;outline:none;transition:border-color .15s}
+  .search-box input:focus{border-color:#58a6ff}
+  .search-box input::placeholder{color:#8b949e}
+  
+  .reunion-list{flex:1;overflow-y:auto;padding:4px 0}
+  .reunion-list::-webkit-scrollbar{width:4px}
+  .reunion-list::-webkit-scrollbar-thumb{background:#30363d;border-radius:4px}
+  
+  .reunion-item{padding:12px 16px;border-bottom:1px solid #21262d;cursor:pointer;transition:background .1s}
+  .reunion-item:hover{background:#1c2128}
+  .reunion-item.active{background:#1f6feb22;border-left:3px solid #58a6ff;padding-left:13px}
+  .reunion-item .title{font-weight:600;font-size:.9rem;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .reunion-item .meta{display:flex;gap:12px;font-size:.75rem;color:#8b949e}
+  .reunion-item .meta .dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px}
+  .reunion-item .meta .dot.ready{background:#3fb950}
+  .reunion-item .meta .dot.pending{background:#d29922}
+  .reunion-item .meta .dot.summary{background:#bc8cff}
+  .empty-state{padding:40px 20px;text-align:center;color:#484f58;font-size:.9rem;line-height:1.6}
+  .empty-state .big{font-size:3rem;display:block;margin-bottom:12px}
+
+  /* ─── MAIN ─── */
+  .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+  .main-header{padding:16px 24px;border-bottom:1px solid #30363d;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+  .main-header h2{font-size:1.2rem}
+  .main-header .sub{font-size:.8rem;color:#8b949e}
+  .main-header .actions{display:flex;gap:8px}
+  .main-header .actions button{padding:6px 14px;border:none;border-radius:6px;cursor:pointer;font-size:.8rem;font-weight:600;transition:all .15s}
+  .btn-del{background:#21262d;color:#f85149;border:1px solid #30363d!important}
+  .btn-del:hover{background:#f8514911;border-color:#f85149!important}
+  .btn-export{background:#21262d;color:#e6edf3;border:1px solid #30363d!important}
+  .btn-export:hover{border-color:#58a6ff!important;color:#58a6ff}
+  .btn-close-new{background:#21262d;color:#e6edf3;border:1px solid #30363d!important}
+  .btn-close-new:hover{border-color:#8b949e!important}
+  
+  .main-content{flex:1;overflow-y:auto;padding:24px}
+  .main-content::-webkit-scrollbar{width:6px}
+  .main-content::-webkit-scrollbar-thumb{background:#30363d;border-radius:4px}
+
+  /* ─── NEW MEETING FORM ─── */
+  .new-meeting{max-width:600px;margin:0 auto;padding:20px 0}
+  .new-meeting h3{font-size:1.3rem;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+  .form-group{margin-bottom:16px}
+  .form-group label{display:block;font-size:.85rem;color:#8b949e;margin-bottom:6px;font-weight:600}
+  .form-group input,.form-group select{width:100%;padding:10px 14px;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:.95rem;outline:none;transition:border-color .15s}
+  .form-group input:focus,.form-group select:focus{border-color:#58a6ff}
+  .form-group select option{background:#161b22}
+  
+  .form-row{display:flex;gap:12px}
+  .form-row .form-group{flex:1}
+  
+  .record-section{border:2px dashed #30363d;border-radius:12px;padding:30px;text-align:center;margin:20px 0;transition:all .2s}
+  .record-section.dragover{border-color:#58a6ff;background:#1f6feb11}
+  .record-section.recording{border-color:#f85149;background:#f8514911}
+  .record-section .icon{font-size:3rem;margin-bottom:10px}
+  .record-section .hint{font-size:.85rem;color:#8b949e;margin-top:8px}
+  .record-btn{padding:14px 40px;border:none;border-radius:50px;font-size:1rem;font-weight:700;cursor:pointer;transition:all .2s;margin-top:10px}
+  .record-btn.start{background:#238636;color:#fff}
+  .record-btn.start:hover{background:#2ea043}
+  .record-btn.stop{background:#da3633;color:#fff;animation:pulse 1s infinite}
+  .record-btn.stop:hover{background:#f85149}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+  .record-btn:disabled{opacity:.5;cursor:not-allowed}
+  .record-timer{font-size:1.5rem;font-weight:700;margin-top:8px;color:#58a6ff}
+  .record-progress{margin-top:10px;height:4px;background:#30363d;border-radius:4px;overflow:hidden;display:none}
+  .record-progress .bar{height:100%;background:#58a6ff;border-radius:4px;width:0%;transition:width .3s}
+
+  .or-divider{display:flex;align-items:center;gap:12px;margin:16px 0;color:#484f58;font-size:.85rem}
+  .or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:#30363d}
+
+  .file-upload-area{position:relative}
+  .file-upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+  .file-upload-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:#21262d;border:1px solid #30363d;border-radius:8px;cursor:pointer;transition:all .15s;width:100%}
+  .file-upload-btn:hover{border-color:#58a6ff;background:#1c2128}
+  .file-name{font-size:.8rem;color:#8b949e;margin-top:6px}
+
+  .submit-btn{width:100%;padding:14px;background:#1f6feb;color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;transition:background .15s;margin-top:10px}
+  .submit-btn:hover{background:#388bfd}
+  .submit-btn:disabled{opacity:.5;cursor:not-allowed}
+
+  /* ─── TRANSCRIPTION VIEW ─── */
+  .transcription-view h3{font-size:1rem;color:#8b949e;margin-bottom:12px;border-bottom:1px solid #30363d;padding-bottom:8px}
+  .transcription-text{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:16px;font-size:.9rem;line-height:1.7;white-space:pre-wrap;max-height:400px;overflow-y:auto;margin-bottom:20px}
+  .transcription-text .ts{color:#58a6ff;font-weight:600}
+  .transcription-text .empty{color:#484f58;text-align:center;padding:40px;font-style:italic}
+  
+  .status-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:.8rem;font-weight:600}
+  .status-badge.processing{background:#d2992222;color:#d29922;border:1px solid #d29922}
+  .status-badge.ready{background:#3fb95022;color:#3fb950;border:1px solid #3fb950}
+
+  .summary-section{margin-top:20px}
+  .summary-section h3{font-size:1rem;color:#8b949e;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .summary-section textarea{width:100%;min-height:120px;padding:12px;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:.9rem;resize:vertical;outline:none;transition:border-color .15s;font-family:inherit;line-height:1.5}
+  .summary-section textarea:focus{border-color:#58a6ff}
+  .summary-section .save-summary{padding:8px 20px;background:#238636;color:#fff;border:none;border-radius:6px;font-size:.85rem;font-weight:600;cursor:pointer;margin-top:8px;transition:background .15s}
+  .summary-section .save-summary:hover{background:#2ea043}
+  .summary-section .save-notice{font-size:.8rem;color:#3fb950;margin-top:6px;display:none}
+
+  .meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px;padding:16px;background:#161b22;border-radius:8px;border:1px solid #30363d}
+  .meta-grid .item{text-align:center}
+  .meta-grid .item .val{font-size:1.2rem;font-weight:700;margin-top:4px}
+  .meta-grid .item .label{font-size:.75rem;color:#8b949e;text-transform:uppercase}
+  .meta-grid .item .val.date{color:#58a6ff}
+  .meta-grid .item .val.dur{color:#d29922}
+  .meta-grid .item .val.spk{color:#bc8cff}
+  .meta-grid .item .val.lang{color:#3fb950}
+
+  .welcome-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#484f58;text-align:center;padding:40px}
+  .welcome-screen .icon{font-size:5rem;margin-bottom:20px}
+  .welcome-screen h2{color:#8b949e;margin-bottom:10px}
+  .welcome-screen p{max-width:400px;line-height:1.6}
+
+  /* ─── RESPONSIVE ─── */
+  @media(max-width:768px){
+    .sidebar{width:100%;min-width:auto;max-height:40vh;border-right:none;border-bottom:1px solid #30363d}
+    body{flex-direction:column}
+    .form-row{flex-direction:column}
+    .meta-grid{grid-template-columns:repeat(2,1fr)}
+  }
+</style>
+</head>
+<body>
+
+<!-- ─── SIDEBAR ─── -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h1>🎙️ <span>Transcriptions</span></h1>
+    <button class="new-btn" onclick="showNewMeeting()">➕ Nouvelle réunion</button>
+  </div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="🔍 Rechercher..." oninput="searchMeetings()">
+  </div>
+  <div class="reunion-list" id="reunionList">
+    <div class="empty-state">
+      <span class="big">🎤</span>
+      Aucune réunion pour le moment.<br>
+      Clique sur <strong>Nouvelle réunion</strong> pour commencer.
+    </div>
+  </div>
+</div>
+
+<!-- ─── MAIN ─── -->
+<div class="main">
+  <div class="main-header">
+    <div>
+      <h2 id="mainTitle">Bienvenue</h2>
+      <div class="sub" id="mainSub"></div>
+    </div>
+    <div class="actions" id="mainActions"></div>
+  </div>
+  <div class="main-content" id="mainContent">
+    <div class="welcome-screen">
+      <div class="icon">🎙️</div>
+      <h2>Transcription vocale de réunions</h2>
+      <p>Enregistre directement depuis ton navigateur,<br>
+      importe un fichier audio,<br>
+      obtiens la transcription automatique et ajoute un résumé.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// ─── STATE ───
+// ══════════════════════════════════════
+let reunions = [];
+let currentId = null;
+let mediaRecorder = null;
+let audioChunks = [];
+let recordingTimer = null;
+let recordingSeconds = 0;
+let recordedBlob = null;
+let isPolling = false;
+
+// ══════════════════════════════════════
+// ─── SIDEBAR ───
+// ══════════════════════════════════════
+async function loadReunions() {
+  try {
+    const r = await fetch('/api/list');
+    const data = await r.json();
+    reunions = data.items || [];
+    renderSidebar();
+  } catch(e) {
+    console.error('Erreur chargement:', e);
+  }
+}
+
+function renderSidebar() {
+  const el = document.getElementById('reunionList');
+  if (reunions.length === 0) {
+    el.innerHTML = `<div class="empty-state"><span class="big">🎤</span>Aucune réunion pour le moment.<br>Clique sur <strong>Nouvelle réunion</strong> pour commencer.</div>`;
+    return;
+  }
+  el.innerHTML = reunions.map(r => {
+    const active = r.id === currentId ? 'active' : '';
+    const dotClass = r.has_transcription ? 'ready' : 'pending';
+    const sumIcon = r.has_summary ? '<span class="dot summary" style="display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px;background:#bc8cff"></span>' : '';
+    return `<div class="reunion-item ${active}" onclick="openReunion('${r.id}')">
+      <div class="title">${esc(r.title)}</div>
+      <div class="meta">
+        <span>📅 ${r.date}</span>
+        <span>⏱ ${r.duration_str}</span>
+        <span>${sumIcon}${r.has_summary ? 'Résumé' : ''}</span>
+        <span><span class="dot ${dotClass}"></span>${r.has_transcription ? 'Prêt' : 'En attente'}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function esc(s) { const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+
+async function searchMeetings() {
+  const q = document.getElementById('searchInput').value.trim();
+  try {
+    const url = q ? `/api/search?q=${encodeURIComponent(q)}` : '/api/list';
+    const r = await fetch(url);
+    const data = await r.json();
+    reunions = data.items || [];
+    renderSidebar();
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════
+// ─── VIEWS ───
+// ══════════════════════════════════════
+function showNewMeeting() {
+  currentId = null;
+  document.getElementById('mainTitle').textContent = '➕ Nouvelle réunion';
+  document.getElementById('mainSub').textContent = '';
+  document.getElementById('mainActions').innerHTML = '';
+  document.getElementById('mainContent').innerHTML = getNewMeetingForm();
+  renderSidebar();
+  resetRecorder();
+}
+
+function resetRecorder() {
+  recordedBlob = null;
+  audioChunks = [];
+  recordingSeconds = 0;
+  if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
+  const btn = document.getElementById('recordBtn');
+  if (btn) { btn.textContent = '🔴 Enregistrer'; btn.className = 'record-btn start'; btn.disabled = false; }
+  const timer = document.getElementById('recordTimer');
+  if (timer) timer.textContent = '00:00';
+  const prog = document.getElementById('recordProgress');
+  if (prog) prog.style.display = 'none';
+}
+
+function getNewMeetingForm() {
+  const today = new Date().toISOString().split('T')[0];
+  return `<div class="new-meeting">
+    <h3>🎙️ Nouvelle réunion</h3>
+    
+    <div class="form-row">
+      <div class="form-group">
+        <label>📌 Titre de la réunion</label>
+        <input type="text" id="meetingTitle" placeholder="Ex: Point client Martin" value="Réunion du ${today}">
+      </div>
+      <div class="form-group">
+        <label>📅 Date</label>
+        <input type="date" id="meetingDate" value="${today}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>👥 Intervenants</label>
+        <select id="meetingSpeakers">
+          ${[1,2,3,4,5,6,7,8].map(n => `<option value="${n}">${n} ${n>1?'personnes':'personne'}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <div class="record-section" id="recordSection">
+      <div class="icon">🎤</div>
+      <div class="hint">Enregistre directement depuis ton micro</div>
+      <button class="record-btn start" id="recordBtn" onclick="toggleRecording()">🔴 Enregistrer</button>
+      <div class="record-timer" id="recordTimer">00:00</div>
+      <div class="record-progress" id="recordProgress"><div class="bar" id="recordBar"></div></div>
+    </div>
+
+    <div class="or-divider">ou</div>
+
+    <div class="file-upload-area">
+      <input type="file" accept="audio/*" id="audioFile" onchange="onFileSelected(this)">
+      <div class="file-upload-btn">📂 Importer un fichier audio</div>
+    </div>
+    <div class="file-name" id="fileName"></div>
+
+    <button class="submit-btn" id="submitBtn" onclick="submitMeeting()" disabled>⏳ Enregistrement requis</button>
+  </div>`;
+}
+
+// ══════════════════════════════════════
+// ─── RECORDING ───
+// ══════════════════════════════════════
+async function toggleRecording() {
+  const btn = document.getElementById('recordBtn');
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+    btn.textContent = '🔴 Enregistrer';
+    btn.className = 'record-btn start';
+    if (recordingTimer) clearInterval(recordingTimer);
+    document.getElementById('recordSection').className = 'record-section';
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioChunks = [];
+    recordedBlob = null;
+    mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm' });
+    
+    mediaRecorder.ondataavailable = e => {
+      if (e.data.size > 0) audioChunks.push(e.data);
+    };
+    
+    mediaRecorder.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      recordedBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+      const section = document.getElementById('recordSection');
+      section.className = 'record-section';
+      section.querySelector('.icon').textContent = '✅';
+      section.querySelector('.hint').textContent = `Enregistrement terminé (${formatTime(recordingSeconds)})`;
+      btn.textContent = '🔄 Ré-enregistrer';
+      updateSubmitBtn();
+      const prog = document.getElementById('recordProgress');
+      prog.style.display = 'none';
+    };
+    
+    mediaRecorder.start(100);
+    btn.textContent = '⏹ Arrêter';
+    btn.className = 'record-btn stop';
+    recordingSeconds = 0;
+    document.getElementById('recordTimer').textContent = '00:00';
+    document.getElementById('recordProgress').style.display = 'block';
+    document.getElementById('recordBar').style.width = '0%';
+    document.getElementById('recordSection').className = 'record-section recording';
+    
+    const startTime = Date.now();
+    recordingTimer = setInterval(() => {
+      recordingSeconds = Math.floor((Date.now() - startTime) / 1000);
+      document.getElementById('recordTimer').textContent = formatTime(recordingSeconds);
+      document.getElementById('recordBar').style.width = Math.min(100, (recordingSeconds / 300) * 100) + '%';
+    }, 200);
+  } catch(e) {
+    alert('Erreur micro: ' + e.message);
+  }
+}
+
+function formatTime(s) {
+  return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+}
+
+function onFileSelected(input) {
+  const f = input.files[0];
+  if (!f) return;
+  document.getElementById('fileName').textContent = `📄 ${f.name} (${(f.size/1024/1024).toFixed(1)} Mo)`;
+  // On va lire le fichier et le stocker comme blob
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    recordedBlob = new Blob([e.target.result], { type: f.type || 'audio/webm' });
+    recordingSeconds = 0;
+    const section = document.getElementById('recordSection');
+    section.querySelector('.icon').textContent = '📂';
+    section.querySelector('.hint').textContent = `Fichier sélectionné : ${f.name}`;
+    updateSubmitBtn();
+  };
+  reader.readAsArrayBuffer(f);
+}
+
+function updateSubmitBtn() {
+  const btn = document.getElementById('submitBtn');
+  if (recordedBlob) {
+    btn.disabled = false;
+    btn.textContent = '🚀 Transcrire la réunion';
+  } else {
+    btn.disabled = true;
+    btn.textContent = '⏳ Enregistrement requis';
+  }
+}
+
+// ══════════════════════════════════════
+// ─── SUBMIT ───
+// ══════════════════════════════════════
+async function submitMeeting() {
+  if (!recordedBlob) return;
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Transcription en cours...';
+
+  const title = document.getElementById('meetingTitle').value.trim() || 'Réunion sans titre';
+  const date = document.getElementById('meetingDate').value;
+  const speakers = document.getElementById('meetingSpeakers').value;
+
+  const formData = new FormData();
+  formData.append('title', title);
+  formData.append('date', date);
+  formData.append('speaker_count', speakers);
+  formData.append('audio', recordedBlob, `enregistrement.webm`);
+
+  try {
+    const r = await fetch('/api/upload', { method: 'POST', body: formData });
+    const data = await r.json();
+    if (data.error) { alert('Erreur: ' + data.error); return; }
+    // Poll en attendant la transcription
+    currentId = data.id;
+    pollTranscription(data.id);
+  } catch(e) {
+    alert('Erreur réseau: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '🚀 Transcrire la réunion';
+  }
+}
+
+function pollTranscription(id) {
+  if (isPolling) return;
+  isPolling = true;
+  document.getElementById('mainContent').innerHTML = `<div style="text-align:center;padding:60px">
+    <div style="font-size:3rem;margin-bottom:16px">⏳</div>
+    <p style="color:#8b949e">Transcription en cours...<br>Le chargement du modèle Whisper peut prendre quelques secondes.</p>
+    <div style="width:200px;height:4px;background:#30363d;border-radius:4px;margin:20px auto;overflow:hidden">
+      <div style="height:100%;background:#58a6ff;border-radius:4px;width:0%;animation:loadingBar 2s infinite"></div>
+    </div>
+    <style>@keyframes loadingBar{0%{width:0%}50%{width:60%}100%{width:100%}}</style>
+  </div>`;
+
+  const check = setInterval(async () => {
+    try {
+      const r = await fetch(`/api/get/${id}`);
+      const data = await r.json();
+      if (data.error) return;
+      if (data.raw_transcription && data.raw_transcription !== '' && !data.raw_transcription.startsWith('[Erreur')) {
+        clearInterval(check);
+        isPolling = false;
+        loadReunions();
+        openReunion(id);
+      } else if (data.raw_transcription && data.raw_transcription.startsWith('[Erreur')) {
+        clearInterval(check);
+        isPolling = false;
+        alert('Erreur de transcription: ' + data.raw_transcription);
+        showNewMeeting();
+      }
+    } catch(e) {}
+  }, 2000);
+
+  // Timeout safety
+  setTimeout(() => {
+    if (isPolling) {
+      clearInterval(check);
+      isPolling = false;
+      loadReunions();
+      openReunion(id);
+    }
+  }, 120000);
+}
+
+// ══════════════════════════════════════
+// ─── OPEN REUNION ───
+// ══════════════════════════════════════
+async function openReunion(id) {
+  currentId = id;
+  renderSidebar();
+  try {
+    const r = await fetch(`/api/get/${id}`);
+    const data = await r.json();
+    if (data.error) { showNewMeeting(); return; }
+    renderReunion(data);
+  } catch(e) {
+    showNewMeeting();
+  }
+}
+
+function renderReunion(data) {
+  document.getElementById('mainTitle').textContent = `📄 ${esc(data.title)}`;
+  document.getElementById('mainSub').textContent = `Créée le ${data.created_at || ''}`;
+  document.getElementById('mainActions').innerHTML = `
+    <button class="btn-export" onclick="exportTxt('${data.id}')">📝 Export TXT</button>
+    <button class="btn-export" onclick="exportSrt('${data.id}')">📝 Export SRT</button>
+    <button class="btn-del" onclick="deleteReunion('${data.id}')">🗑 Supprimer</button>
+  `;
+
+  const hasTranscription = data.raw_transcription && data.raw_transcription !== '' && !data.raw_transcription.startsWith('[Erreur');
+  const isError = data.raw_transcription && data.raw_transcription.startsWith('[Erreur');
+  const statusClass = hasTranscription ? 'ready' : (isError ? 'processing' : 'processing');
+  const statusText = hasTranscription ? '✅ Transcrit' : (isError ? '❌ Erreur' : '⏳ En cours...');
+
+  const formatted = data.formatted_text || '';
+
+  let content = `
+    <div class="meta-grid">
+      <div class="item">
+        <div class="label">Date</div>
+        <div class="val date">${esc(data.date)}</div>
+      </div>
+      <div class="item">
+        <div class="label">Durée</div>
+        <div class="val dur">${data.duration_str || '--:--'}</div>
+      </div>
+      <div class="item">
+        <div class="label">Intervenants</div>
+        <div class="val spk">${data.speaker_count || 1}</div>
+      </div>
+      <div class="item">
+        <div class="label">Statut</div>
+        <div class="val"><span class="status-badge ${statusClass}">${statusText}</span></div>
+      </div>
+    </div>
+
+    <div class="transcription-view">
+      <h3>📝 Transcription ${hasTranscription ? `<span style="font-weight:400;color:#8b949e;font-size:.8rem">(clique sur une ligne pour copier)</span>` : ''}</h3>
+      <div class="transcription-text">${hasTranscription ? formatTranscription(formatted) : '<div class="empty">⏳ Transcription en cours ou indisponible...</div>'}</div>
+    </div>
+
+    <div class="summary-section">
+      <h3>📋 Résumé ${data.summary ? '✅' : ''}</h3>
+      <textarea id="summaryText" placeholder="Saisis ou modifie le résumé de la réunion ici...">${esc(data.summary || '')}</textarea>
+      <button class="save-summary" onclick="saveSummary('${data.id}')">💾 Enregistrer le résumé</button>
+      <div class="save-notice" id="summaryNotice">✅ Résumé enregistré</div>
+    </div>
+  `;
+
+  document.getElementById('mainContent').innerHTML = content;
+}
+
+function formatTranscription(text) {
+  if (!text) return '<div class="empty">Aucune transcription</div>';
+  const lines = text.split('\n');
+  return lines.map(line => {
+    // Colorer les timestamps
+    const colored = line.replace(/^\[(\d+:\d+)\]/g, '<span class="ts">[$1]</span>');
+    return `<div style="margin-bottom:4px">${colored || '&nbsp;'}</div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════
+// ─── ACTIONS ───
+// ══════════════════════════════════════
+async function saveSummary(id) {
+  const summary = document.getElementById('summaryText').value.trim();
+  try {
+    const r = await fetch(`/api/summary/${id}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ summary })
+    });
+    const data = await r.json();
+    if (data.status === 'ok') {
+      const notice = document.getElementById('summaryNotice');
+      notice.style.display = 'block';
+      setTimeout(() => { notice.style.display = 'none'; }, 3000);
+      loadReunions();
+    }
+  } catch(e) {
+    alert('Erreur: ' + e.message);
+  }
+}
+
+async function deleteReunion(id) {
+  if (!confirm('Supprimer cette réunion ?')) return;
+  try {
+    await fetch(`/api/delete/${id}`, { method: 'DELETE' });
+    if (currentId === id) {
+      document.getElementById('mainTitle').textContent = 'Bienvenue';
+      document.getElementById('mainSub').textContent = '';
+      document.getElementById('mainActions').innerHTML = '';
+      document.getElementById('mainContent').innerHTML = `<div class="welcome-screen"><div class="icon">🎙️</div><h2>Transcription vocale de réunions</h2><p>Enregistre directement depuis ton navigateur, importe un fichier audio, obtiens la transcription automatique et ajoute un résumé.</p></div>`;
+      currentId = null;
+    }
+    loadReunions();
+  } catch(e) {
+    alert('Erreur: ' + e.message);
+  }
+}
+
+function exportTxt(id) {
+  const reunion = reunions.find(r => r.id === id);
+  if (!reunion) return;
+  fetch(`/api/get/${id}`).then(r=>r.json()).then(data => {
+    const txt = `=== ${data.title} ===\nDate: ${data.date}\nDurée: ${data.duration_str}\n\n--- Transcription ---\n\n${data.formatted_text || data.raw_transcription || ''}\n\n--- Résumé ---\n\n${data.summary || 'Aucun résumé'}\n`;
+    downloadFile(txt, `${data.title.replace(/[^a-zA-Z0-9]/g,'_')}.txt`, 'text/plain');
+  });
+}
+
+function exportSrt(id) {
+  fetch(`/api/get/${id}`).then(r=>r.json()).then(data => {
+    const lines = (data.formatted_text || '').split('\n');
+    let srt = '';
+    let idx = 1;
+    for (const line of lines) {
+      const match = line.match(/^\[(\d+:\d+)\]\s(.+)/);
+      if (match) {
+        const [m, s] = match[1].split(':').map(Number);
+        const start = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}:00,000`;
+        const endM = m + Math.floor((s+5)/60);
+        const endS = (s+5)%60;
+        const end = `${String(endM).padStart(2,'0')}:${String(endS).padStart(2,'0')}:00,000`;
+        srt += `${idx}\n${start} --> ${end}\n${match[2]}\n\n`;
+        idx++;
+      }
+    }
+    if (srt) downloadFile(srt, `${data.title.replace(/[^a-zA-Z0-9]/g,'_')}.srt`, 'text/plain');
+    else alert('Transcription sans timestamps, export TXT disponible');
+  });
+}
+
+function downloadFile(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ══════════════════════════════════════
+// ─── INIT ───
+// ══════════════════════════════════════
+loadReunions();
+// Refresh every 10s
+setInterval(loadReunions, 10000);
+</script>
+</body>
+</html>
